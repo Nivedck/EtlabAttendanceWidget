@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">LBSCEK Attendance</string>
-    <string name="widget_description">Shows your live LBSCEK Etlab attendance</string>
+    <string name="app_name">TileDeck</string>
+    <string name="widget_description">Live info tiles for your home screen</string>
 </resources>

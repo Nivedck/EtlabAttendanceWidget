@@ -299,6 +299,7 @@ drawable ic_call_answer_video
 drawable ic_call_answer_video_low
 drawable ic_call_decline
 drawable ic_call_decline_low
+drawable ic_launcher_background
 drawable notification_action_background
 drawable notification_bg
 drawable notification_bg_low
@@ -2211,6 +2212,10 @@ layout size_match_match
 layout size_match_wrap
 layout size_wrap_match
 layout size_wrap_wrap
+mipmap ic_launcher
+mipmap ic_launcher_foreground
+mipmap ic_launcher_monochrome
+mipmap ic_launcher_round
 raw glance_appwidget_keep
 string androidx_compose_foundation_autofill
 string androidx_compose_ui_autofill

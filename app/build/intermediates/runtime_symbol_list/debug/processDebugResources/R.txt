@@ -298,6 +298,7 @@ int drawable ic_call_answer_video 0x7f06002d
 int drawable ic_call_answer_video_low 0x7f06002e
 int drawable ic_call_decline 0x7f06002f
 int drawable ic_call_decline_low 0x7f060030
+int drawable ic_launcher_background 0x7f06003e
 int drawable notification_action_background 0x7f060031
 int drawable notification_bg 0x7f060032
 int drawable notification_bg_low 0x7f060033
@@ -2210,6 +2211,10 @@ int layout size_match_match 0x7f0a048e
 int layout size_match_wrap 0x7f0a048f
 int layout size_wrap_match 0x7f0a0490
 int layout size_wrap_wrap 0x7f0a0491
+int mipmap ic_launcher 0x7f100000
+int mipmap ic_launcher_foreground 0x7f100001
+int mipmap ic_launcher_monochrome 0x7f100002
+int mipmap ic_launcher_round 0x7f100003
 int raw glance_appwidget_keep 0x7f0b0000
 int string androidx_compose_foundation_autofill 0x7f0c0000
 int string androidx_compose_ui_autofill 0x7f0c0001
