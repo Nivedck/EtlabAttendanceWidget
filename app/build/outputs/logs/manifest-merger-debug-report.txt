@@ -61,8 +61,8 @@ MERGED from [androidx.lifecycle:lifecycle-viewmodel-savedstate-android:2.10.0] /
 MERGED from [androidx.core:core-ktx:1.19.1] /home/shreyas/.gradle/caches/9.6.0/transforms/7ca9082fa2ff05c8002b2bd805ea2e58/transformed/core-ktx-1.19.1/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.datastore:datastore-preferences:1.0.0] /home/shreyas/.gradle/caches/9.6.0/transforms/58d4da950c177c22d309487828baeccc/transformed/datastore-preferences-1.0.0/AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.datastore:datastore:1.0.0] /home/shreyas/.gradle/caches/9.6.0/transforms/c72844e6c8694a666be5ecd446b390e9/transformed/datastore-1.0.0/AndroidManifest.xml:17:1-24:12
-MERGED from [com.squareup.okhttp3:okhttp-android:5.5.0] /home/shreyas/.gradle/caches/9.6.0/transforms/4e922548fbbc2fd3bc9d36d9288081bb/transformed/okhttp/AndroidManifest.xml:2:1-22:12
 MERGED from [androidx.room:room-runtime-android:2.7.0] /home/shreyas/.gradle/caches/9.6.0/transforms/7865b648064957477229798755664cca/transformed/room-runtime-release/AndroidManifest.xml:17:1-31:12
+MERGED from [com.squareup.okhttp3:okhttp-android:5.5.0] /home/shreyas/.gradle/caches/9.6.0/transforms/4e922548fbbc2fd3bc9d36d9288081bb/transformed/okhttp/AndroidManifest.xml:2:1-22:12
 MERGED from [androidx.annotation:annotation-experimental:1.4.1] /home/shreyas/.gradle/caches/9.6.0/transforms/72a3b7d88685b2054199ed3bd265f9e2/transformed/annotation-experimental-1.4.1/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.core:core-viewtree:1.0.0] /home/shreyas/.gradle/caches/9.6.0/transforms/c9d7150b5e6e781fc043da717e07e391/transformed/core-viewtree-1.0.0/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/shreyas/.gradle/caches/9.6.0/transforms/b3b59ce186488a16cf1b82202af0d4cd/transformed/profileinstaller-1.4.0/AndroidManifest.xml:17:1-55:12
@@ -114,10 +114,10 @@ MERGED from [androidx.core:core:1.19.1] /home/shreyas/.gradle/caches/9.6.0/trans
 MERGED from [androidx.core:core:1.19.1] /home/shreyas/.gradle/caches/9.6.0/transforms/1b1d3027a5cf4e14a577d8faf46f53b2/transformed/core-1.19.1/AndroidManifest.xml:28:5-89
 MERGED from [androidx.lifecycle:lifecycle-process:2.10.0] /home/shreyas/.gradle/caches/9.6.0/transforms/c322b5b48ec5dc2441fee295450dbe06/transformed/lifecycle-process-2.10.0/AndroidManifest.xml:23:5-33:19
 MERGED from [androidx.lifecycle:lifecycle-process:2.10.0] /home/shreyas/.gradle/caches/9.6.0/transforms/c322b5b48ec5dc2441fee295450dbe06/transformed/lifecycle-process-2.10.0/AndroidManifest.xml:23:5-33:19
-MERGED from [com.squareup.okhttp3:okhttp-android:5.5.0] /home/shreyas/.gradle/caches/9.6.0/transforms/4e922548fbbc2fd3bc9d36d9288081bb/transformed/okhttp/AndroidManifest.xml:10:5-20:19
-MERGED from [com.squareup.okhttp3:okhttp-android:5.5.0] /home/shreyas/.gradle/caches/9.6.0/transforms/4e922548fbbc2fd3bc9d36d9288081bb/transformed/okhttp/AndroidManifest.xml:10:5-20:19
 MERGED from [androidx.room:room-runtime-android:2.7.0] /home/shreyas/.gradle/caches/9.6.0/transforms/7865b648064957477229798755664cca/transformed/room-runtime-release/AndroidManifest.xml:23:5-29:19
 MERGED from [androidx.room:room-runtime-android:2.7.0] /home/shreyas/.gradle/caches/9.6.0/transforms/7865b648064957477229798755664cca/transformed/room-runtime-release/AndroidManifest.xml:23:5-29:19
+MERGED from [com.squareup.okhttp3:okhttp-android:5.5.0] /home/shreyas/.gradle/caches/9.6.0/transforms/4e922548fbbc2fd3bc9d36d9288081bb/transformed/okhttp/AndroidManifest.xml:10:5-20:19
+MERGED from [com.squareup.okhttp3:okhttp-android:5.5.0] /home/shreyas/.gradle/caches/9.6.0/transforms/4e922548fbbc2fd3bc9d36d9288081bb/transformed/okhttp/AndroidManifest.xml:10:5-20:19
 MERGED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/shreyas/.gradle/caches/9.6.0/transforms/b3b59ce186488a16cf1b82202af0d4cd/transformed/profileinstaller-1.4.0/AndroidManifest.xml:23:5-53:19
 MERGED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/shreyas/.gradle/caches/9.6.0/transforms/b3b59ce186488a16cf1b82202af0d4cd/transformed/profileinstaller-1.4.0/AndroidManifest.xml:23:5-53:19
 MERGED from [androidx.startup:startup-runtime:1.2.0] /home/shreyas/.gradle/caches/9.6.0/transforms/e0eb279f159e5a855b31154514083343/transformed/startup-runtime-1.2.0/AndroidManifest.xml:23:5-29:19
@@ -136,7 +136,7 @@ MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /home/shrey
 		ADDED from /home/shreyas/dev/EtlabAttendanceWidget/app/src/main/AndroidManifest.xml:7:9-36
 	android:theme
 		ADDED from /home/shreyas/dev/EtlabAttendanceWidget/app/src/main/AndroidManifest.xml:10:9-54
-activity#in.lbscek.attendance.ui.MainActivity
+activity#io.github.shreyasskdev.tiledeck.ui.MainActivity
 ADDED from /home/shreyas/dev/EtlabAttendanceWidget/app/src/main/AndroidManifest.xml:12:9-19:20
 	android:exported
 		ADDED from /home/shreyas/dev/EtlabAttendanceWidget/app/src/main/AndroidManifest.xml:14:13-36
@@ -152,7 +152,7 @@ category#android.intent.category.LAUNCHER
 ADDED from /home/shreyas/dev/EtlabAttendanceWidget/app/src/main/AndroidManifest.xml:17:17-77
 	android:name
 		ADDED from /home/shreyas/dev/EtlabAttendanceWidget/app/src/main/AndroidManifest.xml:17:27-74
-receiver#in.lbscek.attendance.widget.AttendanceWidgetReceiver
+receiver#io.github.shreyasskdev.tiledeck.widget.AttendanceWidgetReceiver
 ADDED from /home/shreyas/dev/EtlabAttendanceWidget/app/src/main/AndroidManifest.xml:22:9-31:20
 	android:exported
 		ADDED from /home/shreyas/dev/EtlabAttendanceWidget/app/src/main/AndroidManifest.xml:24:13-37
@@ -170,7 +170,7 @@ ADDED from /home/shreyas/dev/EtlabAttendanceWidget/app/src/main/AndroidManifest.
 		ADDED from /home/shreyas/dev/EtlabAttendanceWidget/app/src/main/AndroidManifest.xml:30:17-63
 	android:name
 		ADDED from /home/shreyas/dev/EtlabAttendanceWidget/app/src/main/AndroidManifest.xml:29:17-58
-receiver#in.lbscek.attendance.widget.TotalPercentageWidgetReceiver
+receiver#io.github.shreyasskdev.tiledeck.widget.TotalPercentageWidgetReceiver
 ADDED from /home/shreyas/dev/EtlabAttendanceWidget/app/src/main/AndroidManifest.xml:34:9-41:20
 	android:exported
 		ADDED from /home/shreyas/dev/EtlabAttendanceWidget/app/src/main/AndroidManifest.xml:34:72-95
@@ -294,10 +294,10 @@ MERGED from [androidx.datastore:datastore-preferences:1.0.0] /home/shreyas/.grad
 MERGED from [androidx.datastore:datastore-preferences:1.0.0] /home/shreyas/.gradle/caches/9.6.0/transforms/58d4da950c177c22d309487828baeccc/transformed/datastore-preferences-1.0.0/AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.datastore:datastore:1.0.0] /home/shreyas/.gradle/caches/9.6.0/transforms/c72844e6c8694a666be5ecd446b390e9/transformed/datastore-1.0.0/AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.datastore:datastore:1.0.0] /home/shreyas/.gradle/caches/9.6.0/transforms/c72844e6c8694a666be5ecd446b390e9/transformed/datastore-1.0.0/AndroidManifest.xml:20:5-22:41
-MERGED from [com.squareup.okhttp3:okhttp-android:5.5.0] /home/shreyas/.gradle/caches/9.6.0/transforms/4e922548fbbc2fd3bc9d36d9288081bb/transformed/okhttp/AndroidManifest.xml:6:5-44
-MERGED from [com.squareup.okhttp3:okhttp-android:5.5.0] /home/shreyas/.gradle/caches/9.6.0/transforms/4e922548fbbc2fd3bc9d36d9288081bb/transformed/okhttp/AndroidManifest.xml:6:5-44
 MERGED from [androidx.room:room-runtime-android:2.7.0] /home/shreyas/.gradle/caches/9.6.0/transforms/7865b648064957477229798755664cca/transformed/room-runtime-release/AndroidManifest.xml:21:5-44
 MERGED from [androidx.room:room-runtime-android:2.7.0] /home/shreyas/.gradle/caches/9.6.0/transforms/7865b648064957477229798755664cca/transformed/room-runtime-release/AndroidManifest.xml:21:5-44
+MERGED from [com.squareup.okhttp3:okhttp-android:5.5.0] /home/shreyas/.gradle/caches/9.6.0/transforms/4e922548fbbc2fd3bc9d36d9288081bb/transformed/okhttp/AndroidManifest.xml:6:5-44
+MERGED from [com.squareup.okhttp3:okhttp-android:5.5.0] /home/shreyas/.gradle/caches/9.6.0/transforms/4e922548fbbc2fd3bc9d36d9288081bb/transformed/okhttp/AndroidManifest.xml:6:5-44
 MERGED from [androidx.annotation:annotation-experimental:1.4.1] /home/shreyas/.gradle/caches/9.6.0/transforms/72a3b7d88685b2054199ed3bd265f9e2/transformed/annotation-experimental-1.4.1/AndroidManifest.xml:5:5-44
 MERGED from [androidx.annotation:annotation-experimental:1.4.1] /home/shreyas/.gradle/caches/9.6.0/transforms/72a3b7d88685b2054199ed3bd265f9e2/transformed/annotation-experimental-1.4.1/AndroidManifest.xml:5:5-44
 MERGED from [androidx.core:core-viewtree:1.0.0] /home/shreyas/.gradle/caches/9.6.0/transforms/c9d7150b5e6e781fc043da717e07e391/transformed/core-viewtree-1.0.0/AndroidManifest.xml:5:5-44
@@ -548,7 +548,7 @@ ADDED from [androidx.core:core:1.19.1] /home/shreyas/.gradle/caches/9.6.0/transf
 		ADDED from [androidx.core:core:1.19.1] /home/shreyas/.gradle/caches/9.6.0/transforms/1b1d3027a5cf4e14a577d8faf46f53b2/transformed/core-1.19.1/AndroidManifest.xml:24:9-44
 	android:name
 		ADDED from [androidx.core:core:1.19.1] /home/shreyas/.gradle/caches/9.6.0/transforms/1b1d3027a5cf4e14a577d8faf46f53b2/transformed/core-1.19.1/AndroidManifest.xml:23:9-81
-permission#in.lbscek.attendance.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+permission#io.github.shreyasskdev.tiledeck.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 ADDED from [androidx.core:core:1.19.1] /home/shreyas/.gradle/caches/9.6.0/transforms/1b1d3027a5cf4e14a577d8faf46f53b2/transformed/core-1.19.1/AndroidManifest.xml:22:5-24:47
 	android:protectionLevel
 		ADDED from [androidx.core:core:1.19.1] /home/shreyas/.gradle/caches/9.6.0/transforms/1b1d3027a5cf4e14a577d8faf46f53b2/transformed/core-1.19.1/AndroidManifest.xml:24:9-44
@@ -558,7 +558,7 @@ uses-permission#${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 ADDED from [androidx.core:core:1.19.1] /home/shreyas/.gradle/caches/9.6.0/transforms/1b1d3027a5cf4e14a577d8faf46f53b2/transformed/core-1.19.1/AndroidManifest.xml:26:5-97
 	android:name
 		ADDED from [androidx.core:core:1.19.1] /home/shreyas/.gradle/caches/9.6.0/transforms/1b1d3027a5cf4e14a577d8faf46f53b2/transformed/core-1.19.1/AndroidManifest.xml:26:22-94
-uses-permission#in.lbscek.attendance.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+uses-permission#io.github.shreyasskdev.tiledeck.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 ADDED from [androidx.core:core:1.19.1] /home/shreyas/.gradle/caches/9.6.0/transforms/1b1d3027a5cf4e14a577d8faf46f53b2/transformed/core-1.19.1/AndroidManifest.xml:26:5-97
 	android:name
 		ADDED from [androidx.core:core:1.19.1] /home/shreyas/.gradle/caches/9.6.0/transforms/1b1d3027a5cf4e14a577d8faf46f53b2/transformed/core-1.19.1/AndroidManifest.xml:26:22-94
@@ -568,12 +568,6 @@ ADDED from [androidx.lifecycle:lifecycle-process:2.10.0] /home/shreyas/.gradle/c
 		ADDED from [androidx.lifecycle:lifecycle-process:2.10.0] /home/shreyas/.gradle/caches/9.6.0/transforms/c322b5b48ec5dc2441fee295450dbe06/transformed/lifecycle-process-2.10.0/AndroidManifest.xml:31:17-49
 	android:name
 		ADDED from [androidx.lifecycle:lifecycle-process:2.10.0] /home/shreyas/.gradle/caches/9.6.0/transforms/c322b5b48ec5dc2441fee295450dbe06/transformed/lifecycle-process-2.10.0/AndroidManifest.xml:30:17-78
-meta-data#okhttp3.internal.platform.PlatformInitializer
-ADDED from [com.squareup.okhttp3:okhttp-android:5.5.0] /home/shreyas/.gradle/caches/9.6.0/transforms/4e922548fbbc2fd3bc9d36d9288081bb/transformed/okhttp/AndroidManifest.xml:16:13-18:52
-	android:value
-		ADDED from [com.squareup.okhttp3:okhttp-android:5.5.0] /home/shreyas/.gradle/caches/9.6.0/transforms/4e922548fbbc2fd3bc9d36d9288081bb/transformed/okhttp/AndroidManifest.xml:18:17-49
-	android:name
-		ADDED from [com.squareup.okhttp3:okhttp-android:5.5.0] /home/shreyas/.gradle/caches/9.6.0/transforms/4e922548fbbc2fd3bc9d36d9288081bb/transformed/okhttp/AndroidManifest.xml:17:17-77
 service#androidx.room.MultiInstanceInvalidationService
 ADDED from [androidx.room:room-runtime-android:2.7.0] /home/shreyas/.gradle/caches/9.6.0/transforms/7865b648064957477229798755664cca/transformed/room-runtime-release/AndroidManifest.xml:24:9-28:63
 	android:exported
@@ -584,6 +578,12 @@ ADDED from [androidx.room:room-runtime-android:2.7.0] /home/shreyas/.gradle/cach
 		ADDED from [androidx.room:room-runtime-android:2.7.0] /home/shreyas/.gradle/caches/9.6.0/transforms/7865b648064957477229798755664cca/transformed/room-runtime-release/AndroidManifest.xml:26:13-43
 	android:name
 		ADDED from [androidx.room:room-runtime-android:2.7.0] /home/shreyas/.gradle/caches/9.6.0/transforms/7865b648064957477229798755664cca/transformed/room-runtime-release/AndroidManifest.xml:25:13-74
+meta-data#okhttp3.internal.platform.PlatformInitializer
+ADDED from [com.squareup.okhttp3:okhttp-android:5.5.0] /home/shreyas/.gradle/caches/9.6.0/transforms/4e922548fbbc2fd3bc9d36d9288081bb/transformed/okhttp/AndroidManifest.xml:16:13-18:52
+	android:value
+		ADDED from [com.squareup.okhttp3:okhttp-android:5.5.0] /home/shreyas/.gradle/caches/9.6.0/transforms/4e922548fbbc2fd3bc9d36d9288081bb/transformed/okhttp/AndroidManifest.xml:18:17-49
+	android:name
+		ADDED from [com.squareup.okhttp3:okhttp-android:5.5.0] /home/shreyas/.gradle/caches/9.6.0/transforms/4e922548fbbc2fd3bc9d36d9288081bb/transformed/okhttp/AndroidManifest.xml:17:17-77
 meta-data#androidx.profileinstaller.ProfileInstallerInitializer
 ADDED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/shreyas/.gradle/caches/9.6.0/transforms/b3b59ce186488a16cf1b82202af0d4cd/transformed/profileinstaller-1.4.0/AndroidManifest.xml:29:13-31:52
 	android:value

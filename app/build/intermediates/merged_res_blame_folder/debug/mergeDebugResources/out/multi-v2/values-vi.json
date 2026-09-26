@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "in.lbscek.attendance.app-mergeDebugResources-48:/values-vi/values-vi.xml",
+            "outputFile": "io.github.shreyasskdev.tiledeck.app-mergeDebugResources-48:/values-vi/values-vi.xml",
             "map": [
                 {
                     "source": "/home/shreyas/.gradle/caches/9.6.0/transforms/fb0330a0c98087b6dbe3b0cb37ea88b3/transformed/material3/res/values-vi/values-vi.xml",

@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "in.lbscek.attendance.app-mergeDebugResources-48:/values-night-v8/values-night-v8.xml",
+            "outputFile": "io.github.shreyasskdev.tiledeck.app-mergeDebugResources-48:/values-night-v8/values-night-v8.xml",
             "map": [
                 {
                     "source": "/home/shreyas/dev/EtlabAttendanceWidget/app/src/main/res/values-night/colors.xml",

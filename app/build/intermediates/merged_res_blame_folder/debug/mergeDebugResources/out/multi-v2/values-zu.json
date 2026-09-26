@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "in.lbscek.attendance.app-mergeDebugResources-48:/values-zu/values-zu.xml",
+            "outputFile": "io.github.shreyasskdev.tiledeck.app-mergeDebugResources-48:/values-zu/values-zu.xml",
             "map": [
                 {
                     "source": "/home/shreyas/.gradle/caches/9.6.0/transforms/b533530f56f0ca5615ba6c796bc39ac9/transformed/foundation/res/values-zu/values-zu.xml",

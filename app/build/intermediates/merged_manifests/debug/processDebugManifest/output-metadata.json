@@ -4,7 +4,7 @@
     "type": "MERGED_MANIFESTS",
     "kind": "Directory"
   },
-  "applicationId": "in.lbscek.attendance",
+  "applicationId": "io.github.shreyasskdev.tiledeck",
   "variantName": "debug",
   "elements": [
     {

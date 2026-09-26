@@ -1,6 +1,6 @@
 1<?xml version="1.0" encoding="utf-8"?>
 2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-3    package="in.lbscek.attendance"
+3    package="io.github.shreyasskdev.tiledeck"
 4    android:versionCode="1"
 5    android:versionName="1.0" >
 6
@@ -29,12 +29,12 @@
 16
 17    <permission
 17-->[androidx.core:core:1.19.1] /home/shreyas/.gradle/caches/9.6.0/transforms/1b1d3027a5cf4e14a577d8faf46f53b2/transformed/core-1.19.1/AndroidManifest.xml:22:5-24:47
-18        android:name="in.lbscek.attendance.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+18        android:name="io.github.shreyasskdev.tiledeck.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
 18-->[androidx.core:core:1.19.1] /home/shreyas/.gradle/caches/9.6.0/transforms/1b1d3027a5cf4e14a577d8faf46f53b2/transformed/core-1.19.1/AndroidManifest.xml:23:9-81
 19        android:protectionLevel="signature" />
 19-->[androidx.core:core:1.19.1] /home/shreyas/.gradle/caches/9.6.0/transforms/1b1d3027a5cf4e14a577d8faf46f53b2/transformed/core-1.19.1/AndroidManifest.xml:24:9-44
 20
-21    <uses-permission android:name="in.lbscek.attendance.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+21    <uses-permission android:name="io.github.shreyasskdev.tiledeck.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
 21-->[androidx.core:core:1.19.1] /home/shreyas/.gradle/caches/9.6.0/transforms/1b1d3027a5cf4e14a577d8faf46f53b2/transformed/core-1.19.1/AndroidManifest.xml:26:5-97
 21-->[androidx.core:core:1.19.1] /home/shreyas/.gradle/caches/9.6.0/transforms/1b1d3027a5cf4e14a577d8faf46f53b2/transformed/core-1.19.1/AndroidManifest.xml:26:22-94
 22
@@ -56,7 +56,7 @@
 31-->/home/shreyas/dev/EtlabAttendanceWidget/app/src/main/AndroidManifest.xml:10:9-54
 32        <activity
 32-->/home/shreyas/dev/EtlabAttendanceWidget/app/src/main/AndroidManifest.xml:12:9-19:20
-33            android:name="in.lbscek.attendance.ui.MainActivity"
+33            android:name="io.github.shreyasskdev.tiledeck.ui.MainActivity"
 33-->/home/shreyas/dev/EtlabAttendanceWidget/app/src/main/AndroidManifest.xml:13:13-44
 34            android:exported="true" >
 34-->/home/shreyas/dev/EtlabAttendanceWidget/app/src/main/AndroidManifest.xml:14:13-36
@@ -75,7 +75,7 @@
 42        <!-- Full Attendance widget -->
 43        <receiver
 43-->/home/shreyas/dev/EtlabAttendanceWidget/app/src/main/AndroidManifest.xml:22:9-31:20
-44            android:name="in.lbscek.attendance.widget.AttendanceWidgetReceiver"
+44            android:name="io.github.shreyasskdev.tiledeck.widget.AttendanceWidgetReceiver"
 44-->/home/shreyas/dev/EtlabAttendanceWidget/app/src/main/AndroidManifest.xml:23:13-60
 45            android:exported="false" >
 45-->/home/shreyas/dev/EtlabAttendanceWidget/app/src/main/AndroidManifest.xml:24:13-37
@@ -97,7 +97,7 @@
 55        <!-- Small Attendance widget -->
 56        <receiver
 56-->/home/shreyas/dev/EtlabAttendanceWidget/app/src/main/AndroidManifest.xml:34:9-41:20
-57            android:name="in.lbscek.attendance.widget.TotalPercentageWidgetReceiver"
+57            android:name="io.github.shreyasskdev.tiledeck.widget.TotalPercentageWidgetReceiver"
 57-->/home/shreyas/dev/EtlabAttendanceWidget/app/src/main/AndroidManifest.xml:34:19-71
 58            android:exported="true" >
 58-->/home/shreyas/dev/EtlabAttendanceWidget/app/src/main/AndroidManifest.xml:34:72-95
@@ -210,7 +210,7 @@
 119-->[androidx.work:work-runtime:2.12.0] /home/shreyas/.gradle/caches/9.6.0/transforms/8f9edff8b20a7ee3ea2fec0f23668033/transformed/work-runtime-2.12.0/AndroidManifest.xml:29:9-37:20
 120            android:name="androidx.startup.InitializationProvider"
 120-->[androidx.work:work-runtime:2.12.0] /home/shreyas/.gradle/caches/9.6.0/transforms/8f9edff8b20a7ee3ea2fec0f23668033/transformed/work-runtime-2.12.0/AndroidManifest.xml:30:13-67
-121            android:authorities="in.lbscek.attendance.androidx-startup"
+121            android:authorities="io.github.shreyasskdev.tiledeck.androidx-startup"
 121-->[androidx.work:work-runtime:2.12.0] /home/shreyas/.gradle/caches/9.6.0/transforms/8f9edff8b20a7ee3ea2fec0f23668033/transformed/work-runtime-2.12.0/AndroidManifest.xml:31:13-68
 122            android:exported="false" >
 122-->[androidx.work:work-runtime:2.12.0] /home/shreyas/.gradle/caches/9.6.0/transforms/8f9edff8b20a7ee3ea2fec0f23668033/transformed/work-runtime-2.12.0/AndroidManifest.xml:32:13-37

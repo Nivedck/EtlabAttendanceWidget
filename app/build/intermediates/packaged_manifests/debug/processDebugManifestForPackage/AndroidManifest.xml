@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="in.lbscek.attendance"
+    package="io.github.shreyasskdev.tiledeck"
     android:versionCode="1"
     android:versionName="1.0" >
 
@@ -15,10 +15,10 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <permission
-        android:name="in.lbscek.attendance.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+        android:name="io.github.shreyasskdev.tiledeck.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
         android:protectionLevel="signature" />
 
-    <uses-permission android:name="in.lbscek.attendance.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+    <uses-permission android:name="io.github.shreyasskdev.tiledeck.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
 
     <application
         android:allowBackup="false"
@@ -30,7 +30,7 @@
         android:testOnly="true"
         android:theme="@style/Theme.AttendanceWidget" >
         <activity
-            android:name="in.lbscek.attendance.ui.MainActivity"
+            android:name="io.github.shreyasskdev.tiledeck.ui.MainActivity"
             android:exported="true" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -41,7 +41,7 @@
 
         <!-- Full Attendance widget -->
         <receiver
-            android:name="in.lbscek.attendance.widget.AttendanceWidgetReceiver"
+            android:name="io.github.shreyasskdev.tiledeck.widget.AttendanceWidgetReceiver"
             android:exported="false" >
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -54,7 +54,7 @@
 
         <!-- Small Attendance widget -->
         <receiver
-            android:name="in.lbscek.attendance.widget.TotalPercentageWidgetReceiver"
+            android:name="io.github.shreyasskdev.tiledeck.widget.TotalPercentageWidgetReceiver"
             android:exported="true" >
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -118,7 +118,7 @@
 
         <provider
             android:name="androidx.startup.InitializationProvider"
-            android:authorities="in.lbscek.attendance.androidx-startup"
+            android:authorities="io.github.shreyasskdev.tiledeck.androidx-startup"
             android:exported="false" >
             <meta-data
                 android:name="androidx.work.WorkManagerInitializer"
