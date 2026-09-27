@@ -14,6 +14,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.remember
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.glance.ColorFilter
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
@@ -27,6 +30,7 @@ import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
+import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
@@ -40,6 +44,8 @@ import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
 import androidx.glance.layout.width
+import androidx.glance.state.GlanceStateDefinition
+import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontFamily
 import androidx.glance.text.FontStyle
 import androidx.glance.text.FontWeight
@@ -51,20 +57,26 @@ import io.github.shreyasskdev.tiledeck.data.AttendanceResult
 import io.github.shreyasskdev.tiledeck.data.SubjectAttendance
 import io.github.shreyasskdev.tiledeck.ui.MainActivity
 
+val ATTENDANCE_WIDGET_UPDATE_KEY = longPreferencesKey("widget_update_timestamp")
+
 class AttendanceWidget : GlanceAppWidget() {
 
-    override suspend fun provideGlance(context: Context, id: GlanceId) {
-        // CRITICAL FIX: Force applicationContext to ensure we hit the
-        // exact same EncryptedSharedPreferences singleton instance
-        val prefs = AttendancePrefs(context.applicationContext)
+    override val stateDefinition: GlanceStateDefinition<Preferences> = PreferencesGlanceStateDefinition
 
-        val result = prefs.getLastResult()
-        val updatedText = prefs.getLastUpdatedText()
-        val hasCredentials = prefs.hasCredentials()
-        val subjectNameOverrides = prefs.getSubjectNames()
-        val useCustomNames = prefs.getUseCustomNames()
+    override suspend fun provideGlance(context: Context, id: GlanceId) {
+        val appContext = context.applicationContext
 
         provideContent {
+            val glanceState = currentState<Preferences>()
+            val updateTime = glanceState[ATTENDANCE_WIDGET_UPDATE_KEY] ?: 0L
+
+            val prefs = remember(updateTime) { AttendancePrefs(appContext) }
+            val result = prefs.getLastResult()
+            val updatedText = prefs.getLastUpdatedText()
+            val hasCredentials = prefs.hasCredentials()
+            val subjectNameOverrides = prefs.getSubjectNames()
+            val useCustomNames = prefs.getUseCustomNames()
+
             GlanceTheme {
                 WidgetContent(hasCredentials, result, updatedText, subjectNameOverrides, useCustomNames)
             }

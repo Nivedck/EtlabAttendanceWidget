@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -42,17 +44,26 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.state.updateAppWidgetState
+import androidx.glance.appwidget.updateAll
+import androidx.glance.state.PreferencesGlanceStateDefinition
+import io.github.shreyasskdev.tiledeck.AppScope
 import io.github.shreyasskdev.tiledeck.data.AttendancePrefs
 import io.github.shreyasskdev.tiledeck.data.AttendanceResult
 import io.github.shreyasskdev.tiledeck.data.EtlabRepository
 import io.github.shreyasskdev.tiledeck.data.InvalidCredentialsException
 import io.github.shreyasskdev.tiledeck.ui.theme.AttendanceTheme
+import io.github.shreyasskdev.tiledeck.widget.ATTENDANCE_WIDGET_UPDATE_KEY
 import io.github.shreyasskdev.tiledeck.widget.AttendanceWidget
+import io.github.shreyasskdev.tiledeck.widget.TOTAL_WIDGET_UPDATE_KEY
+import io.github.shreyasskdev.tiledeck.widget.TotalPercentageWidget
+import io.github.shreyasskdev.tiledeck.widget.enqueueWidgetRefresh
 import io.github.shreyasskdev.tiledeck.work.AttendanceWorker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -62,6 +73,8 @@ import kotlinx.coroutines.withContext
 private const val UI_PREFS = "attendance_ui_prefs"
 private const val KEY_USE_SHORTHAND = "use_shorthand"
 private const val TAG = "AttendanceUI"
+
+private enum class SaveState { Idle, Saving, Saved }
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -91,33 +104,46 @@ class MainActivity : ComponentActivity() {
 //    3. swallow-and-log errors so a single bad ID doesn't kill the loop
 // ─────────────────────────────────────────────────────────────────────────────
 suspend fun refreshAttendanceWidgets(context: Context) {
-    delay(400L)
     try {
-        // CRITICAL FIX: Always use applicationContext for Glance operations
-        // to avoid the "empty IDs" bug when called from an Activity context.
         val appContext = context.applicationContext
-        val manager = GlanceAppWidgetManager(appContext)
-        val ids = manager.getGlanceIds(AttendanceWidget::class.java)
+        val now = System.currentTimeMillis()
 
-        Log.d(TAG, "refreshAttendanceWidgets: Found ${ids.size} widget(s)")
-
-        if (ids.isEmpty()) {
-            Log.w(TAG, "No widget IDs found. The widget might not be placed, or this is a Glance context bug.")
-            return
-        }
-
-        ids.forEach { id ->
+        // 1. Update Glance AppWidget state for AttendanceWidget
+        val attendanceManager = GlanceAppWidgetManager(appContext)
+        val attendanceIds = attendanceManager.getGlanceIds(AttendanceWidget::class.java)
+        Log.d(TAG, "refreshAttendanceWidgets: Found ${attendanceIds.size} AttendanceWidget(s)")
+        attendanceIds.forEach { glanceId ->
             runCatching {
-                // Pass appContext here as well for consistency
-                AttendanceWidget().update(appContext, id)
-                Log.d(TAG, "Successfully updated widget $id")
+                updateAppWidgetState(appContext, PreferencesGlanceStateDefinition, glanceId) { prefs ->
+                    prefs.toMutablePreferences().apply {
+                        this[ATTENDANCE_WIDGET_UPDATE_KEY] = now
+                    }
+                }
+                AttendanceWidget().update(appContext, glanceId)
+                Log.d(TAG, "Updated Glance state & widget for $glanceId")
             }.onFailure { e ->
-                // Changed to Log.e so it stands out in Logcat if it fails
-                Log.e(TAG, "Widget update failed for $id", e)
+                Log.e(TAG, "Failed updating Glance widget $glanceId", e)
             }
         }
+
+        // 2. Update Glance AppWidget state for TotalPercentageWidget
+        val totalIds = attendanceManager.getGlanceIds(TotalPercentageWidget::class.java)
+        totalIds.forEach { glanceId ->
+            runCatching {
+                updateAppWidgetState(appContext, PreferencesGlanceStateDefinition, glanceId) { prefs ->
+                    prefs.toMutablePreferences().apply {
+                        this[TOTAL_WIDGET_UPDATE_KEY] = now
+                    }
+                }
+                TotalPercentageWidget().update(appContext, glanceId)
+            }
+        }
+
+        // Fallback updateAll as well
+        AttendanceWidget().updateAll(appContext)
+        TotalPercentageWidget().updateAll(appContext)
     } catch (e: Exception) {
-        Log.e(TAG, "refreshAttendanceWidgets failed completely", e)
+        Log.e(TAG, "refreshAttendanceWidgets failed", e)
     }
 }
 
@@ -139,6 +165,7 @@ fun AttendanceSetupScreen() {
     var password by remember { mutableStateOf(prefs.getPassword() ?: "") }
     var status by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(false) }
+    var saveState by remember { mutableStateOf(SaveState.Idle) }
 
     var result by remember { mutableStateOf(prefs.getLastResult()) }
     var nameOverrides by remember { mutableStateOf(prefs.getSubjectNames()) }
@@ -182,30 +209,31 @@ fun AttendanceSetupScreen() {
                 onSave = {
                     loading = true
                     status = null
-                    scope.launch {
+                    val appContext = context.applicationContext
+                    AppScope.scope.launch {
                         try {
                             val repo = EtlabRepository()
                             val fetched: AttendanceResult =
                                 repo.fetchAttendance(username.trim(), password).attendance
 
-                            withContext(Dispatchers.IO) {
-                                prefs.saveCredentials(username.trim(), password)
-                                prefs.saveLastResult(fetched)
+                            prefs.saveCredentials(username.trim(), password)
+                            prefs.saveLastResult(fetched)
+
+                            refreshAttendanceWidgets(appContext)
+                            AttendanceWorker.schedulePeriodic(appContext)
+
+                            withContext(Dispatchers.Main) {
+                                result = fetched
+                                status = "Success — overall attendance is %.1f%%. ".format(
+                                    fetched.overallPercent
+                                ) + "Now add the widget from your home screen's widget picker."
                             }
-
-                            refreshAttendanceWidgets(context)
-                            AttendanceWorker.schedulePeriodic(context)
-
-                            result = fetched
-                            status = "Success — overall attendance is %.1f%%. ".format(
-                                fetched.overallPercent
-                            ) + "Now add the widget from your home screen's widget picker."
                         } catch (e: InvalidCredentialsException) {
-                            status = "Invalid username or password."
+                            withContext(Dispatchers.Main) { status = "Invalid username or password." }
                         } catch (e: Exception) {
-                            status = "Couldn't fetch attendance: ${e.message}"
+                            withContext(Dispatchers.Main) { status = "Couldn't fetch attendance: ${e.message}" }
                         } finally {
-                            loading = false
+                            withContext(Dispatchers.Main) { loading = false }
                         }
                     }
                 },
@@ -260,11 +288,10 @@ fun AttendanceSetupScreen() {
                     checked = useCustomNames,
                     onCheckedChange = { checked ->
                         useCustomNames = checked
-                        scope.launch {
-                            withContext(Dispatchers.IO) {
-                                prefs.saveUseCustomNames(checked)
-                            }
-                            refreshAttendanceWidgets(context)
+                        val appContext = context.applicationContext
+                        AppScope.scope.launch {
+                            prefs.saveUseCustomNames(checked)
+                            refreshAttendanceWidgets(appContext)
                         }
                     },
                 )
@@ -299,11 +326,10 @@ fun AttendanceSetupScreen() {
                         }
                         nameOverrides = updated
 
-                        scope.launch {
-                            withContext(Dispatchers.IO) {
-                                prefs.saveSubjectNames(updated)
-                            }
-                            refreshAttendanceWidgets(context)
+                        val appContext = context.applicationContext
+                        AppScope.scope.launch {
+                            prefs.saveSubjectNames(updated)
+                            refreshAttendanceWidgets(appContext)
                         }
                     },
                 )
@@ -330,21 +356,29 @@ fun AttendanceSetupScreen() {
             item {
                 Button(
                     onClick = {
-                        scope.launch {
-                            withContext(Dispatchers.IO) {
-                                prefs.saveSubjectNames(nameOverrides)
-                            }
-                            refreshAttendanceWidgets(context)
+                        saveState = SaveState.Saving
+                        val appContext = context.applicationContext
+                        AppScope.scope.launch {
+                            prefs.saveSubjectNames(nameOverrides)
+                            refreshAttendanceWidgets(appContext)
+                            enqueueWidgetRefresh(appContext)
+                            withContext(Dispatchers.Main) { saveState = SaveState.Saved }
+                            delay(1500)
+                            withContext(Dispatchers.Main) { saveState = SaveState.Idle }
                         }
                     },
-                    enabled = useCustomNames,
+                    enabled = useCustomNames && saveState != SaveState.Saving,
                     shape = MaterialTheme.shapes.large,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
                 ) {
                     Text(
-                        text = "Save name overrides",
+                        text = when (saveState) {
+                            SaveState.Saving -> "Saving…"
+                            SaveState.Saved -> "Saved ✓"
+                            SaveState.Idle -> "Save name overrides"
+                        },
                         style = MaterialTheme.typography.titleSmall,
                     )
                 }
@@ -465,15 +499,7 @@ private fun SubjectOverrideItem(
     enabled: Boolean,
     onValueChange: (String) -> Unit,
 ) {
-    var focused by remember { mutableStateOf(false) }
-    val hasOverride = overrideValue.isNotBlank()
-
-    val displayValue: String = when {
-        !enabled -> originalName
-        hasOverride -> overrideValue
-        focused -> ""
-        else -> originalName
-    }
+    val focusManager = LocalFocusManager.current
 
     val container = if (enabled) {
         MaterialTheme.colorScheme.surfaceContainerLow
@@ -512,15 +538,18 @@ private fun SubjectOverrideItem(
             Spacer(Modifier.height(12.dp))
 
             OutlinedTextField(
-                value = displayValue,
+                value = if (enabled) overrideValue else originalName,
                 onValueChange = onValueChange,
                 enabled = enabled,
                 label = { Text("Custom display name") },
+                placeholder = { Text(originalName) },
                 singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(
+                    onDone = { focusManager.clearFocus() }
+                ),
                 shape = MaterialTheme.shapes.small,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .onFocusChanged { focused = it.isFocused },
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }
