@@ -21,7 +21,7 @@ import org.json.JSONObject
  */
 class EtlabRepository(private val baseClient: OkHttpClient = OkHttpClient()) {
 
-    data class FetchResult(val attendance: AttendanceResult)
+    data class FetchResult(val attendance: AttendanceResult, val timetable: TimetableResult? = null)
 
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
@@ -29,7 +29,8 @@ class EtlabRepository(private val baseClient: OkHttpClient = OkHttpClient()) {
         withContext(Dispatchers.IO) {
             val accessToken = login(username, password)
             val attendance = fetchAttendanceBySubject(accessToken)
-            FetchResult(attendance)
+            val timetable = runCatching { fetchTimetable(accessToken) }.getOrNull()
+            FetchResult(attendance, timetable)
         }
 
     private fun login(username: String, password: String): String {
@@ -131,6 +132,48 @@ class EtlabRepository(private val baseClient: OkHttpClient = OkHttpClient()) {
                 overallPercent = overallPercent,
                 updatedAt = System.currentTimeMillis()
             )
+        }
+    }
+
+    private fun fetchTimetable(accessToken: String): TimetableResult {
+        val payload = JSONObject().toString()
+
+        val request = Request.Builder()
+            .url("$ETLAB_BASE_URL/androidapp/app/timetable")
+            .header("User-Agent", ETLAB_USER_AGENT)
+            .header("Content-Type", "application/json")
+            .header("Authorization", "Bearer $accessToken")
+            .post(payload.toRequestBody(jsonMediaType))
+            .build()
+
+        baseClient.newCall(request).execute().use { response ->
+            val bodyText = response.body?.string().orEmpty()
+            val json = runCatching { JSONObject(bodyText) }.getOrNull()
+                ?: throw ParsingException("Etlab returned an unexpected timetable response.")
+
+            if (!json.optBoolean("login", true)) {
+                throw SessionExpiredException()
+            }
+
+            val timetableJson = json.optJSONArray("timetable")
+                ?: throw ParsingException("No timetable found in Etlab's response.")
+
+            val days = mutableListOf<TimetableDayResult>()
+            for (i in 0 until timetableJson.length()) {
+                val dayJson = timetableJson.optJSONObject(i) ?: continue
+                val day = dayJson.optString("day", "")
+                val subjectsJson = dayJson.optJSONArray("sub") ?: JSONArray()
+
+                val subjects = mutableListOf<TimetableSubjectResult>()
+                for (j in 0 until subjectsJson.length()) {
+                    val subJson = subjectsJson.optJSONObject(j) ?: continue
+                    val hour = subJson.optInt("hour", 0)
+                    val subject = subJson.optString("subject", "").trim()
+                    subjects.add(TimetableSubjectResult(hour, subject))
+                }
+                days.add(TimetableDayResult(day, subjects))
+            }
+            return TimetableResult(days, System.currentTimeMillis())
         }
     }
 }

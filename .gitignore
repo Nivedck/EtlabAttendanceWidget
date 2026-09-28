@@ -8,6 +8,7 @@
 .externalNativeBuild
 .cxx
 *.apk
+AGENT.md
 
 # Per-module build outputs
 app/build/
