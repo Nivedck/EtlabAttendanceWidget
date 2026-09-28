@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">TileDeck</string>
     <string name="widget_description">Live info tiles for your home screen</string>
+    <string name="timetable_widget_description">Today\'s timetable at a glance</string>
 </resources>
