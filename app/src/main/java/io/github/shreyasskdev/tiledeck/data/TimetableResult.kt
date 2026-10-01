@@ -64,12 +64,14 @@ data class TimetableDayResult(
 
 data class TimetableSubjectResult(
     val hour: Int,
-    val subject: String
+    val subject: String,
+    val attendanceStatus: String? = null
 ) {
     fun toJson(): JSONObject {
         val json = JSONObject()
         json.put("hour", hour)
         json.put("subject", subject)
+        attendanceStatus?.let { json.put("attendanceStatus", it) }
         return json
     }
 
@@ -77,7 +79,11 @@ data class TimetableSubjectResult(
         fun fromJson(json: JSONObject): TimetableSubjectResult {
             val hour = json.optInt("hour", 0)
             val subject = json.optString("subject", "")
-            return TimetableSubjectResult(hour, subject)
+            val attendanceStatus = json
+                .optString("attendanceStatus", "")
+                .trim()
+                .takeIf { it.isNotEmpty() }
+            return TimetableSubjectResult(hour, subject, attendanceStatus)
         }
     }
 }

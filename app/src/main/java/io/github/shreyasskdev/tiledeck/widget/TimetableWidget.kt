@@ -252,11 +252,14 @@ class TimetableWidget : GlanceAppWidget() {
                 ) {
                     rowPeriods.forEachIndexed { colIndex, subject ->
                         val isCurrentPeriod = isCurrentPeriod(subject.hour, nowHour, nowMinute)
+                        val hasStarted = hasStartedPeriod(subject.hour, nowHour, nowMinute)
                         val shortName = resolveShortName(subject.subject, subjectNameOverrides)
 
                         PeriodPill(
                             label = shortName.ifBlank { "FREE" },
                             hour = subject.hour,
+                            attendanceStatus = subject.attendanceStatus,
+                            hasStarted = hasStarted,
                             isCurrent = isCurrentPeriod,
                             context = context,
                             modifier = GlanceModifier.defaultWeight().fillMaxHeight()
@@ -275,19 +278,22 @@ class TimetableWidget : GlanceAppWidget() {
     private fun PeriodPill(
         label: String,
         hour: Int,
+        attendanceStatus: String?,
+        hasStarted: Boolean,
         isCurrent: Boolean,
         context: Context,
         modifier: GlanceModifier
     ) {
-        val background = if (isCurrent) {
-            GlanceTheme.colors.primaryContainer
-        } else {
-            GlanceTheme.colors.secondaryContainer
+        val isPresent = hasStarted && attendanceStatus.equals("present", ignoreCase = true)
+        val background = when {
+            isCurrent -> GlanceTheme.colors.primaryContainer
+            isPresent -> GlanceTheme.colors.tertiaryContainer
+            else -> GlanceTheme.colors.secondaryContainer
         }
-        val textColor = if (isCurrent) {
-            GlanceTheme.colors.onPrimaryContainer
-        } else {
-            GlanceTheme.colors.onSecondaryContainer
+        val textColor = when {
+            isCurrent -> GlanceTheme.colors.onPrimaryContainer
+            isPresent -> GlanceTheme.colors.onTertiaryContainer
+            else -> GlanceTheme.colors.onSecondaryContainer
         }
 
         val timeStr = PERIOD_START_TIMES[hour]?.let { (h, m) ->
@@ -323,6 +329,17 @@ class TimetableWidget : GlanceAppWidget() {
                             color = textColor,
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Normal
+                        )
+                    )
+                }
+                if (isPresent) {
+                    Spacer(modifier = GlanceModifier.width(3.dp))
+                    Text(
+                        text = "✓",
+                        style = TextStyle(
+                            color = textColor,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
                         )
                     )
                 }
@@ -431,5 +448,12 @@ class TimetableWidget : GlanceAppWidget() {
         val startTotal = start.first * 60 + start.second
         val endTotal = end.first * 60 + end.second
         return nowTotal in startTotal..endTotal
+    }
+
+    private fun hasStartedPeriod(hour: Int, nowHour: Int, nowMinute: Int): Boolean {
+        val start = PERIOD_START_TIMES[hour] ?: return false
+        val nowTotal = nowHour * 60 + nowMinute
+        val startTotal = start.first * 60 + start.second
+        return nowTotal >= startTotal
     }
 }
