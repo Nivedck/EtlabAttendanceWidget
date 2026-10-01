@@ -26,14 +26,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LargeTopAppBar
@@ -50,9 +50,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -90,6 +90,7 @@ import kotlinx.coroutines.withContext
 private const val UI_PREFS = "attendance_ui_prefs"
 private const val KEY_USE_SHORTHAND = "use_shorthand"
 private const val TAG = "AttendanceUI"
+private const val TAB_COUNT = 3
 
 internal enum class SaveState { Idle, Saving, Saved }
 
@@ -97,12 +98,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Non-deprecated edge-to-edge setup.
         WindowCompat.enableEdgeToEdge(window)
 
-        // Kill the navigation-bar contrast scrim that shows up as a
-        // translucent black strip behind the gesture pill on API 29+.
-        // Guarded because setNavigationBarContrastEnforced is API 29+.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             window.isNavigationBarContrastEnforced = false
         }
@@ -200,8 +197,11 @@ fun AttendanceExpressiveApp() {
     val prefs = remember { AttendancePrefs(context) }
     val uiPrefs = remember { context.getSharedPreferences(UI_PREFS, Context.MODE_PRIVATE) }
     val reducedMotion = rememberReducedMotion()
+    val tabScope = rememberCoroutineScope()
 
-    var selectedTab by remember { mutableIntStateOf(0) }
+    val pagerState = rememberPagerState(pageCount = { TAB_COUNT })
+    val selectedTab: Int = pagerState.currentPage
+
     var showAbout by remember { mutableStateOf(false) }
 
     var username by remember { mutableStateOf(prefs.getUsername() ?: "") }
@@ -224,6 +224,13 @@ fun AttendanceExpressiveApp() {
     var downloadProgress by remember { mutableStateOf<ApkDownloader.Progress?>(null) }
     var downloadError by remember { mutableStateOf<String?>(null) }
     var lastCheckedAt by remember { mutableStateOf<Long?>(null) }
+
+    // Native toast for status messages (success / error / credentials).
+    // The effect clears `status` after showing it so it doesn't re-fire.
+    StatusToastEffect(
+        status = status,
+        onStatusShown = { status = null },
+    )
 
     val topAppBarScrollBehavior: TopAppBarScrollBehavior =
         TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
@@ -525,143 +532,116 @@ fun AttendanceExpressiveApp() {
                         .fillMaxSize()
                         .padding(top = innerPadding.calculateTopPadding()),
                 ) {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                    ) {
-                        status?.let { msg ->
-                        Card(
-                            shape = RoundedCornerShape(20.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 20.dp, vertical = 4.dp),
-                        ) {
-                            Text(
-                                text = msg,
-                                modifier = Modifier.padding(14.dp),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            )
-                        }
-                    }
-
-                    AnimatedContent(
-                        targetState = selectedTab,
-                        transitionSpec = {
-                            val duration = motionSpecMillis(reducedMotion, 300)
-                            if (targetState > initialState) {
-                                slideInHorizontally(tween(duration)) { width -> width } + fadeIn(tween(duration)) togetherWith
-                                        slideOutHorizontally(tween(duration)) { width -> -width } + fadeOut(tween(duration))
-                            } else {
-                                slideInHorizontally(tween(duration)) { width -> -width } + fadeIn(tween(duration)) togetherWith
-                                        slideOutHorizontally(tween(duration)) { width -> width } + fadeOut(tween(duration))
-                            }
-                        },
-                        label = "TabContentTransition",
-                    ) { tabIndex ->
-                        when (tabIndex) {
-                            0 -> OverviewTab(
-                                result = result,
-                                updatedText = prefs.getLastUpdatedText(),
-                                loading = loading,
-                                nameOverrides = nameOverrides,
-                                useCustomNames = useCustomNames,
-                                onRefresh = onFetchAttendance,
-                            )
-                            1 -> CustomizationTab(
-                                result = result,
-                                useCustomNames = useCustomNames,
-                                onUseCustomNamesChange = { checked ->
-                                    useCustomNames = checked
-                                    val appContext = context.applicationContext
-                                    AppScope.scope.launch {
-                                        prefs.saveUseCustomNames(checked)
-                                        refreshAttendanceWidgets(appContext)
-                                    }
-                                },
-                                useShorthand = useShorthand,
-                                onUseShorthandChange = { checked ->
-                                    useShorthand = checked
-                                    uiPrefs.edit().putBoolean(KEY_USE_SHORTHAND, checked).apply()
-                                    val currentResult = result ?: return@CustomizationTab
-                                    val updated = nameOverrides.toMutableMap()
-                                    currentResult.subjects.forEach { subject ->
-                                        val original = subject.name.ifBlank { subject.code }
-                                        val shorthand = toShorthand(original)
-                                        if (checked) {
-                                            if (updated[subject.code].isNullOrBlank()) {
-                                                updated[subject.code] = shorthand
-                                            }
-                                        } else {
-                                            if (updated[subject.code] == shorthand) {
-                                                updated.remove(subject.code)
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier.fillMaxSize(),
+                        ) { page ->
+                            when (page) {
+                                0 -> OverviewTab(
+                                    result = result,
+                                    updatedText = prefs.getLastUpdatedText(),
+                                    loading = loading,
+                                    nameOverrides = nameOverrides,
+                                    useCustomNames = useCustomNames,
+                                    onRefresh = onFetchAttendance,
+                                )
+                                1 -> CustomizationTab(
+                                    result = result,
+                                    useCustomNames = useCustomNames,
+                                    onUseCustomNamesChange = { checked ->
+                                        useCustomNames = checked
+                                        val appContext = context.applicationContext
+                                        AppScope.scope.launch {
+                                            prefs.saveUseCustomNames(checked)
+                                            refreshAttendanceWidgets(appContext)
+                                        }
+                                    },
+                                    useShorthand = useShorthand,
+                                    onUseShorthandChange = { checked ->
+                                        useShorthand = checked
+                                        uiPrefs.edit().putBoolean(KEY_USE_SHORTHAND, checked).apply()
+                                        val currentResult = result ?: return@CustomizationTab
+                                        val updated = nameOverrides.toMutableMap()
+                                        currentResult.subjects.forEach { subject ->
+                                            val original = subject.name.ifBlank { subject.code }
+                                            val shorthand = toShorthand(original)
+                                            if (checked) {
+                                                if (updated[subject.code].isNullOrBlank()) {
+                                                    updated[subject.code] = shorthand
+                                                }
+                                            } else {
+                                                if (updated[subject.code] == shorthand) {
+                                                    updated.remove(subject.code)
+                                                }
                                             }
                                         }
-                                    }
-                                    nameOverrides = updated
-                                    val appContext = context.applicationContext
-                                    AppScope.scope.launch {
-                                        prefs.saveSubjectNames(updated)
-                                        refreshAttendanceWidgets(appContext)
-                                    }
-                                },
-                                nameOverrides = nameOverrides,
-                                onOverrideChange = { code, value ->
-                                    nameOverrides = nameOverrides.toMutableMap().apply { put(code, value) }
-                                },
-                                saveState = saveState,
-                                onSave = {
-                                    saveState = SaveState.Saving
-                                    val appContext = context.applicationContext
-                                    AppScope.scope.launch {
-                                        prefs.saveSubjectNames(nameOverrides)
-                                        refreshAttendanceWidgets(appContext)
-                                        enqueueWidgetRefresh(appContext)
-                                        withContext(Dispatchers.Main) { saveState = SaveState.Saved }
-                                        delay(1500)
-                                        withContext(Dispatchers.Main) { saveState = SaveState.Idle }
-                                    }
-                                },
-                            )
-                            else -> SettingsTab(
-                                username = username,
-                                onUsernameChange = { username = it },
-                                password = password,
-                                onPasswordChange = { password = it },
-                                loading = loading,
-                                onLoginSave = onFetchAttendance,
-                                refreshInterval = refreshInterval,
-                                onIntervalSelected = { minutes ->
-                                    refreshInterval = minutes
-                                    prefs.saveRefreshIntervalMinutes(minutes)
-                                    AttendanceWorker.schedulePeriodic(context.applicationContext, minutes)
-                                },
-                                onOpenAbout = { showAbout = true },
-                                updateStatus = updateStatus,
-                                lastCheckedAt = lastCheckedAt,
-                                onCheckForUpdates = onCheckForUpdates,
-                                onInstallUpdate = {
-                                    if (updateStatus is UpdateStatus.Available) {
-                                        downloadError = null
-                                        showUpdateDialog = true
-                                    }
-                                },
-                            )
+                                        nameOverrides = updated
+                                        val appContext = context.applicationContext
+                                        AppScope.scope.launch {
+                                            prefs.saveSubjectNames(updated)
+                                            refreshAttendanceWidgets(appContext)
+                                        }
+                                    },
+                                    nameOverrides = nameOverrides,
+                                    onOverrideChange = { code, value ->
+                                        nameOverrides = nameOverrides.toMutableMap().apply { put(code, value) }
+                                    },
+                                    saveState = saveState,
+                                    onSave = {
+                                        saveState = SaveState.Saving
+                                        val appContext = context.applicationContext
+                                        AppScope.scope.launch {
+                                            prefs.saveSubjectNames(nameOverrides)
+                                            refreshAttendanceWidgets(appContext)
+                                            enqueueWidgetRefresh(appContext)
+                                            withContext(Dispatchers.Main) { saveState = SaveState.Saved }
+                                            delay(1500)
+                                            withContext(Dispatchers.Main) { saveState = SaveState.Idle }
+                                        }
+                                    },
+                                )
+                                else -> SettingsTab(
+                                    username = username,
+                                    onUsernameChange = { username = it },
+                                    password = password,
+                                    onPasswordChange = { password = it },
+                                    loading = loading,
+                                    onLoginSave = onFetchAttendance,
+                                    refreshInterval = refreshInterval,
+                                    onIntervalSelected = { minutes ->
+                                        refreshInterval = minutes
+                                        prefs.saveRefreshIntervalMinutes(minutes)
+                                        AttendanceWorker.schedulePeriodic(context.applicationContext, minutes)
+                                    },
+                                    onOpenAbout = { showAbout = true },
+                                    updateStatus = updateStatus,
+                                    lastCheckedAt = lastCheckedAt,
+                                    onCheckForUpdates = onCheckForUpdates,
+                                    onInstallUpdate = {
+                                        if (updateStatus is UpdateStatus.Available) {
+                                            downloadError = null
+                                            showUpdateDialog = true
+                                        }
+                                    },
+                                )
+                            }
                         }
                     }
-                }
 
-                FloatingTabBar(
-                    selectedTab = selectedTab,
-                    onTabSelected = { selectedTab = it },
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .navigationBarsPadding()
-                        .padding(bottom = 16.dp),
-                )
-            }
+                    FloatingTabBar(
+                        selectedTab = selectedTab,
+                        onTabSelected = { index ->
+                            tabScope.launch {
+                                pagerState.animateScrollToPage(index)
+                            }
+                        },
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .navigationBarsPadding()
+                            .padding(bottom = 16.dp),
+                    )
+                }
             }
         }
     }

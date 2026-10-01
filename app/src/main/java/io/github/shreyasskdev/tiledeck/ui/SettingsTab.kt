@@ -1,6 +1,12 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
 package io.github.shreyasskdev.tiledeck.ui
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -12,30 +18,71 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.ToggleButton
+import androidx.compose.material3.ToggleButtonDefaults
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import io.github.shreyasskdev.tiledeck.BuildConfig
 import io.github.shreyasskdev.tiledeck.data.UpdateStatus
+
+private val PASSWORD_SHAPES = listOf(
+    MaterialShapes.Cookie4Sided,
+    MaterialShapes.Sunny,
+    MaterialShapes.Clover4Leaf,
+    MaterialShapes.Gem,
+    MaterialShapes.Cookie9Sided,
+)
+
+private val REFRESH_OPTIONS = listOf(
+    60L to "1h",
+    120L to "2h",
+    240L to "4h",
+    720L to "12h",
+    1440L to "24h",
+)
+
+private const val DEFAULT_REFRESH_MINUTES = 60L
 
 @Composable
 internal fun SettingsTab(
@@ -82,7 +129,6 @@ internal fun SettingsTab(
             }
         }
 
-        // Version + About are related, so they touch.
         item {
             Section("App") {
                 TileColumn(count = 2) { index, position ->
@@ -130,12 +176,15 @@ private fun CredentialsCard(
     loading: Boolean,
     onSave: () -> Unit,
 ) {
-    AppCard {
+    val focusManager = LocalFocusManager.current
+
+    AppCard(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh) {
         Text(
             text = "Etlab credentials",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
         )
+        Spacer(Modifier.height(4.dp))
         Text(
             text = "Encrypted and stored only on this device.",
             style = MaterialTheme.typography.bodyMedium,
@@ -143,24 +192,22 @@ private fun CredentialsCard(
         )
         Spacer(Modifier.height(16.dp))
 
-        OutlinedTextField(
+        ExpressiveField(
             value = username,
             onValueChange = onUsernameChange,
-            label = { Text("Etlab username") },
-            singleLine = true,
-            shape = CircleShape,
-            modifier = Modifier.fillMaxWidth(),
+            placeholder = "Etlab username",
+            keyboardType = KeyboardType.Text,
+            imeAction = ImeAction.Next,
         )
+
         Spacer(Modifier.height(12.dp))
-        OutlinedTextField(
+
+        PasswordShapeField(
             value = password,
             onValueChange = onPasswordChange,
-            label = { Text("Etlab password") },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            shape = CircleShape,
-            modifier = Modifier.fillMaxWidth(),
+            onDone = { focusManager.clearFocus() },
         )
+
         Spacer(Modifier.height(20.dp))
 
         Button(
@@ -180,6 +227,179 @@ private fun CredentialsCard(
     }
 }
 
+@Composable
+private fun ExpressiveField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    keyboardType: KeyboardType,
+    imeAction: ImeAction,
+) {
+    var focused by remember { mutableStateOf(false) }
+
+    Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceBright,
+        border = BorderStroke(
+            width = if (focused) 2.dp else 1.dp,
+            color = if (focused) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.outlineVariant,
+        ),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 14.dp),
+            contentAlignment = Alignment.CenterStart,
+        ) {
+            if (value.isEmpty()) {
+                Text(
+                    text = placeholder,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                )
+            }
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Medium,
+                ),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = keyboardType,
+                    imeAction = imeAction,
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { focused = it.isFocused },
+            )
+        }
+    }
+}
+
+@Composable
+private fun PasswordShapeField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    onDone: () -> Unit = {},
+) {
+    var focused by remember { mutableStateOf(false) }
+    var showPassword by remember { mutableStateOf(false) }
+    val scrollState = rememberScrollState()
+
+    LaunchedEffect(value.length, showPassword) {
+        withFrameNanos { }
+        scrollState.animateScrollTo(scrollState.maxValue)
+    }
+
+    Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceBright,
+        border = BorderStroke(
+            width = if (focused) 2.dp else 1.dp,
+            color = if (focused) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.outlineVariant,
+        ),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 20.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(vertical = 10.dp),
+                contentAlignment = Alignment.CenterStart,
+            ) {
+                if (value.isEmpty()) {
+                    Text(
+                        text = "Etlab password",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    )
+                }
+
+                BasicTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(
+                        color = if (showPassword) MaterialTheme.colorScheme.onSurface
+                        else Color.Transparent,
+                        fontWeight = FontWeight.Medium,
+                    ),
+                    cursorBrush = SolidColor(
+                        if (showPassword) MaterialTheme.colorScheme.primary
+                        else Color.Transparent,
+                    ),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(onDone = { onDone() }),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { focused = it.isFocused },
+                    decorationBox = { innerTextField ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(scrollState),
+                            contentAlignment = Alignment.CenterStart,
+                        ) {
+                            if (!showPassword && value.isNotEmpty()) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.align(Alignment.CenterStart),
+                                ) {
+                                    repeat(value.length) { index ->
+                                        PasswordShapeGlyph(index)
+                                    }
+                                }
+                            }
+                            innerTextField()
+                        }
+                    },
+                )
+            }
+
+            IconButton(
+                onClick = { showPassword = !showPassword },
+                modifier = Modifier.size(44.dp),
+            ) {
+                Icon(
+                    imageVector = if (showPassword) Icons.Outlined.VisibilityOff
+                    else Icons.Outlined.Visibility,
+                    contentDescription = if (showPassword) "Hide password" else "Show password",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PasswordShapeGlyph(index: Int) {
+    val polygon = PASSWORD_SHAPES[index % PASSWORD_SHAPES.size]
+    val tint = MaterialTheme.colorScheme.primary
+
+    Box(
+        modifier = Modifier
+            .size(12.dp)
+            .clip(polygon.toShape())
+            .background(tint),
+    )
+}
+
 // ───────────────────────────── Background refresh ─────────────────────────────
 
 @Composable
@@ -187,12 +407,22 @@ private fun BackgroundRefreshCard(
     currentMinutes: Long,
     onIntervalSelected: (Long) -> Unit,
 ) {
-    val options = listOf(
-        15L to "15m", 30L to "30m", 60L to "1h", 120L to "2h",
-        240L to "4h", 360L to "6h", 720L to "12h", 1440L to "24h",
+    val displayedMinutes = if (REFRESH_OPTIONS.any { it.first == currentMinutes }) {
+        currentMinutes
+    } else {
+        DEFAULT_REFRESH_MINUTES
+    }
+
+    // ToggleButtonDefaults.colors() — the correct API for styling ToggleButtons.
+    // The previous ButtonGroupDefaults.connectedButtonGroupColors() does not exist.
+    val groupColors = ToggleButtonDefaults.colors(
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        checkedContainerColor = MaterialTheme.colorScheme.primary,
+        checkedContentColor = MaterialTheme.colorScheme.onPrimary,
     )
 
-    AppCard {
+    AppCard(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh) {
         Text(
             text = "Background refresh",
             style = MaterialTheme.typography.titleLarge,
@@ -200,42 +430,57 @@ private fun BackgroundRefreshCard(
         )
         Spacer(Modifier.height(4.dp))
         Text(
-            text = "Fetches new attendance in the background, even when the app is closed. Android enforces a 15-minute minimum.",
+            text = "New attendance is fetched automatically, even when the app is closed.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Spacer(Modifier.height(16.dp))
 
-        listOf(options.take(4), options.drop(4)).forEachIndexed { index, rowOptions ->
-            if (index > 0) Spacer(Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                rowOptions.forEach { (minutes, label) ->
-                    FilterChip(
-                        selected = currentMinutes == minutes,
-                        onClick = { onIntervalSelected(minutes) },
-                        label = {
-                            Text(
-                                text = label,
-                                style = MaterialTheme.typography.labelLarge,
-                                modifier = Modifier.fillMaxWidth(),
-                                textAlign = TextAlign.Center,
-                            )
-                        },
-                        shape = CircleShape,
-                        modifier = Modifier.weight(1f),
+        Spacer(Modifier.height(20.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(
+                ButtonGroupDefaults.ConnectedSpaceBetween
+            ),
+        ) {
+            REFRESH_OPTIONS.forEachIndexed { index, (minutes, label) ->
+                val checked = minutes == displayedMinutes
+
+                ToggleButton(
+                    checked = checked,
+                    onCheckedChange = { onIntervalSelected(minutes) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .semantics { role = Role.RadioButton },
+                    shapes = when (index) {
+                        0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                        REFRESH_OPTIONS.lastIndex ->
+                            ButtonGroupDefaults.connectedTrailingButtonShapes()
+                        else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
+                    },
+                    colors = groupColors,
+                ) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
                     )
                 }
             }
         }
+
+        Spacer(Modifier.height(12.dp))
+
+        Text(
+            text = "Android enforces a 15-minute minimum interval.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
 // ───────────────────────────── Version ─────────────────────────────
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun VersionCard(
     status: UpdateStatus?,
@@ -281,7 +526,7 @@ private fun VersionCard(
         is UpdateStatus.Error -> status.message
     }
 
-    AppCard(shape = shape) {
+    AppCard(shape = shape, containerColor = MaterialTheme.colorScheme.surfaceContainerHigh) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -344,7 +589,6 @@ private fun VersionCard(
             Spacer(Modifier.height(8.dp))
         }
 
-        // A labelled button instead of a bare icon, so it's obvious what it does.
         FilledTonalButton(
             onClick = onCheckForUpdates,
             enabled = status != null,
@@ -356,7 +600,11 @@ private fun VersionCard(
             if (status == null) {
                 LoadingIndicator(modifier = Modifier.size(28.dp))
             } else {
-                Icon(Icons.Outlined.Refresh, contentDescription = null, modifier = Modifier.size(20.dp))
+                Icon(
+                    Icons.Outlined.Refresh,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                )
             }
             Spacer(Modifier.width(8.dp))
             Text(

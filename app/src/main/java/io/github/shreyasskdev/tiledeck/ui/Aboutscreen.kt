@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,7 +29,7 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LargeFlexibleTopAppBar
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
@@ -75,10 +74,6 @@ private sealed interface DevState {
     data class Ready(val developers: List<Developer>) : DevState
 }
 
-/**
- * "About & Privacy" — Material 3 Expressive.
- * Needs androidx.compose.material3:material3:1.4.0+ and io.coil-kt:coil-compose:2.7.0.
- */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AboutScreen(onBack: () -> Unit) {
@@ -103,11 +98,26 @@ fun AboutScreen(onBack: () -> Unit) {
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
-            LargeFlexibleTopAppBar(
+            LargeTopAppBar(
                 title = {
-                    Text("About & privacy", fontWeight = FontWeight.Bold)
+                    Column {
+                        Text(
+                            text = "About & privacy",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            text = "Tiledeck Widgets",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 },
-                subtitle = { Text("LBSCEK Attendance App") },
                 navigationIcon = {
                     Box(modifier = Modifier.padding(start = 12.dp, end = 8.dp)) {
                         CircleIconButton(
@@ -123,7 +133,6 @@ fun AboutScreen(onBack: () -> Unit) {
                     containerColor = MaterialTheme.colorScheme.surface,
                     scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                 ),
-                windowInsets = WindowInsets.safeDrawing,
                 scrollBehavior = scrollBehavior,
             )
         },
@@ -215,7 +224,7 @@ private fun AboutHero() {
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = "LB",
+                text = "TD",
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -225,7 +234,7 @@ private fun AboutHero() {
         Spacer(Modifier.height(20.dp))
 
         Text(
-            text = "LBSCEK Attendance",
+            text = "Tiledeck Widgets",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
@@ -249,7 +258,7 @@ private fun AboutHero() {
         Spacer(Modifier.height(12.dp))
 
         Text(
-            text = "Your attendance, always one glance away.",
+            text = "Your widgets, always one glance away.",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -330,7 +339,6 @@ private fun AvatarStack(developers: List<Developer>, ringColor: Color) {
     }
 }
 
-/** Initial letter sits underneath; the GitHub avatar fades over it once loaded. */
 @Composable
 private fun DeveloperAvatar(dev: Developer, size: Dp, modifier: Modifier = Modifier) {
     Box(
@@ -445,7 +453,7 @@ private fun DeveloperRow(dev: Developer, position: GroupPosition, onClick: () ->
 private fun PrivacyCard() {
     Surface(
         shape = AppCardShape,
-        color = MaterialTheme.colorScheme.tertiaryContainer,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
@@ -456,10 +464,10 @@ private fun PrivacyCard() {
                 modifier = Modifier
                     .size(44.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.12f)),
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
                 contentAlignment = Alignment.Center,
             ) {
-                LockDotIcon(tint = MaterialTheme.colorScheme.onTertiaryContainer)
+                LockDotIcon(tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Text(
                 text = "This app fetches your current semester's attendance automatically. " +
@@ -467,7 +475,7 @@ private fun PrivacyCard() {
                         "transmitted to lbscek.etlab.app — never to any third party or " +
                         "analytics service.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f),
             )
         }

@@ -1,6 +1,8 @@
 package io.github.shreyasskdev.tiledeck.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -11,12 +13,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -25,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -130,7 +132,7 @@ internal fun CustomizationTab(
             }
         } else {
             item {
-                AppCard(containerColor = MaterialTheme.colorScheme.surfaceContainerLow) {
+                AppCard(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh) {
                     Text(
                         text = "No subjects yet",
                         style = MaterialTheme.typography.titleMedium,
@@ -162,7 +164,7 @@ private fun SubjectOverrideCard(
 
     AppCard(
         shape = shape,
-        containerColor = if (enabled) MaterialTheme.colorScheme.surfaceContainerLow
+        containerColor = if (enabled) MaterialTheme.colorScheme.surfaceContainerHigh
         else MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.45f),
     ) {
         Row(
@@ -211,27 +213,49 @@ private fun SubjectOverrideCard(
 
         Spacer(Modifier.height(16.dp))
 
-        OutlinedTextField(
-            value = if (enabled) overrideValue else originalName,
-            onValueChange = onValueChange,
-            enabled = enabled,
-            label = { Text("Custom display name") },
-            placeholder = { Text(originalName) },
-            singleLine = true,
-            trailingIcon = {
-                if (overrideValue.isNotBlank() && enabled) {
-                    IconButton(
-                        onClick = { onValueChange("") },
-                        modifier = Modifier.semantics { contentDescription = "Clear custom name" },
-                    ) {
-                        ClearIcon(tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+        Surface(
             shape = CircleShape,
+            color = if (enabled) MaterialTheme.colorScheme.surfaceBright
+            else MaterialTheme.colorScheme.surfaceBright.copy(alpha = 0.5f),
+            border = BorderStroke(
+                width = 1.dp,
+                color = if (enabled) MaterialTheme.colorScheme.outlineVariant
+                else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+            ),
             modifier = Modifier.fillMaxWidth(),
-        )
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 14.dp),
+                contentAlignment = Alignment.CenterStart,
+            ) {
+                if (overrideValue.isEmpty()) {
+                    Text(
+                        text = if (enabled) "Custom display name"
+                        else originalName,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    )
+                }
+                BasicTextField(
+                    value = if (enabled) overrideValue else originalName,
+                    onValueChange = onValueChange,
+                    enabled = enabled,
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(
+                        color = if (enabled) MaterialTheme.colorScheme.onSurface
+                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        fontWeight = FontWeight.Medium,
+                    ),
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(
+                        onDone = { focusManager.clearFocus() },
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
     }
 }

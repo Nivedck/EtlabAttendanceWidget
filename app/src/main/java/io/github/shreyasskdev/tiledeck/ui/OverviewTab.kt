@@ -1,5 +1,6 @@
 package io.github.shreyasskdev.tiledeck.ui
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,16 +14,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,6 +35,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.shreyasskdev.tiledeck.data.AttendanceResult
 import io.github.shreyasskdev.tiledeck.data.SubjectAttendance
@@ -56,12 +60,9 @@ internal fun OverviewTab(
         contentPadding = PaddingValues(start = 20.dp, top = 8.dp, end = 20.dp, bottom = 108.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        // One card: overall attendance + safe + at risk.
         item {
-            SummaryCard(
+            HeroAttendanceCard(
                 result = result,
-                safe = subjects.count { it.percent >= SAFE_THRESHOLD },
-                atRisk = subjects.count { it.percent < SAFE_THRESHOLD },
                 updatedText = updatedText,
                 loading = loading,
                 onRefresh = onRefresh,
@@ -69,6 +70,14 @@ internal fun OverviewTab(
         }
 
         if (hasSubjects) {
+            item {
+                StatsRow(
+                    subjects = subjects.size,
+                    safe = subjects.count { it.percent >= SAFE_THRESHOLD },
+                    atRisk = subjects.count { it.percent < SAFE_THRESHOLD },
+                )
+            }
+
             item {
                 Section("Subject breakdown") {
                     TileColumn(subjects.size) { index, position ->
@@ -89,13 +98,12 @@ internal fun OverviewTab(
     }
 }
 
-// ───────────────────────────── Summary group ─────────────────────────────
+// ───────────────────────────── Hero ─────────────────────────────
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun SummaryCard(
+private fun HeroAttendanceCard(
     result: AttendanceResult?,
-    safe: Int,
-    atRisk: Int,
     updatedText: String,
     loading: Boolean,
     onRefresh: () -> Unit,
@@ -105,14 +113,20 @@ private fun SummaryCard(
 
     val containerBg = when {
         result == null -> MaterialTheme.colorScheme.surfaceContainerHigh
-        isGood -> MaterialTheme.colorScheme.primaryContainer
-        else -> MaterialTheme.colorScheme.errorContainer
+        isGood -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.error
     }
     val contentFg = when {
         result == null -> MaterialTheme.colorScheme.onSurface
-        isGood -> MaterialTheme.colorScheme.onPrimaryContainer
-        else -> MaterialTheme.colorScheme.onErrorContainer
+        isGood -> MaterialTheme.colorScheme.onPrimary
+        else -> MaterialTheme.colorScheme.onError
     }
+    val contentSubtle = contentFg.copy(alpha = 0.72f)
+
+    val progress by animateFloatAsState(
+        targetValue = (overall / 100.0).toFloat().coerceIn(0f, 1f),
+        label = "OverallProgress",
+    )
 
     AppCard(containerColor = containerBg, contentPadding = 24.dp) {
         Row(
@@ -120,18 +134,19 @@ private fun SummaryCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(20.dp),
         ) {
-            // Plain, static ring — no wave, no animation.
             Box(
                 modifier = Modifier
-                    .size(124.dp)
-                    .semantics { contentDescription = "Overall attendance %.1f percent".format(overall) },
+                    .size(136.dp)
+                    .semantics {
+                        contentDescription = "Overall Attendance %.1f percent".format(overall)
+                    },
                 contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator(
-                    progress = { (overall / 100.0).toFloat().coerceIn(0f, 1f) },
+                    progress = { progress },
                     modifier = Modifier.fillMaxSize(),
                     color = contentFg,
-                    trackColor = contentFg.copy(alpha = 0.18f),
+                    trackColor = contentFg.copy(alpha = 0.22f),
                     strokeWidth = 10.dp,
                 )
                 Row(verticalAlignment = Alignment.Bottom) {
@@ -152,7 +167,7 @@ private fun SummaryCard(
             }
 
             Column(modifier = Modifier.weight(1f)) {
-                Surface(shape = CircleShape, color = contentFg.copy(alpha = 0.15f)) {
+                Surface(shape = CircleShape, color = contentFg.copy(alpha = 0.18f)) {
                     Text(
                         text = when {
                             result == null -> "NOT SET UP"
@@ -167,7 +182,7 @@ private fun SummaryCard(
                 }
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    text = "Overall attendance",
+                    text = "Overall Attendance",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = contentFg,
@@ -176,50 +191,44 @@ private fun SummaryCard(
                 Text(
                     text = updatedText,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = contentFg.copy(alpha = 0.8f),
-                )
-            }
-        }
-
-        if (result != null) {
-            Spacer(Modifier.height(20.dp))
-            HorizontalDivider(color = contentFg.copy(alpha = 0.18f))
-            Spacer(Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                SummaryStat(
-                    value = safe,
-                    label = "Safe subjects",
-                    color = contentFg,
-                    modifier = Modifier.weight(1f),
-                )
-                VerticalDivider(
-                    modifier = Modifier.height(44.dp),
-                    color = contentFg.copy(alpha = 0.18f),
-                )
-                SummaryStat(
-                    value = atRisk,
-                    label = "At risk",
-                    color = contentFg,
-                    modifier = Modifier.weight(1f),
+                    color = contentSubtle,
                 )
             }
         }
 
         Spacer(Modifier.height(20.dp))
 
+        // Always enabled so the button never takes Material's disabled palette
+        // (which overrides our custom colors with onSurface @ 12%/38% and makes
+        // the whole button vanish against the solid primary card). The click
+        // is guarded instead — taps while loading are simply ignored.
         Button(
-            onClick = onRefresh,
-            enabled = !loading,
+            onClick = { if (!loading) onRefresh() },
             shape = CircleShape,
-            colors = ButtonDefaults.buttonColors(containerColor = contentFg, contentColor = containerBg),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = contentFg,
+                contentColor = containerBg,
+                // Redundant safety net — if some ancestor ever sets enabled=false,
+                // keep the visual identical to the enabled state rather than
+                // snapping to the default disabled palette.
+                disabledContainerColor = contentFg,
+                disabledContentColor = containerBg,
+            ),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
         ) {
+            if (loading) {
+                // Material 3 Expressive morphing-shape loading indicator.
+                // Cycles through a sequence of RoundedPolygon shapes while
+                // visible. Recommended over CircularProgressIndicator for
+                // indeterminate waits under ~5 seconds.
+                LoadingIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = containerBg,
+                )
+                Spacer(Modifier.size(10.dp))
+            }
             Text(
                 text = if (loading) "Refreshing…" else "Refresh attendance",
                 style = MaterialTheme.typography.titleSmall,
@@ -229,20 +238,97 @@ private fun SummaryCard(
     }
 }
 
+// ───────────────────────────── Stats ─────────────────────────────
+
+private val STATS_OUTER_CORNER = 40.dp
+private val STATS_INNER_CORNER = 8.dp
+private val STATS_GAP = 6.dp
+private val STATS_OUTER_EDGE_PADDING = 16.dp
+
 @Composable
-private fun SummaryStat(value: Int, label: String, color: Color, modifier: Modifier = Modifier) {
-    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = value.toString(),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = color,
+private fun StatsRow(subjects: Int, safe: Int, atRisk: Int) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(STATS_GAP),
+    ) {
+        StatCard(
+            value = subjects.toString(),
+            label = "Subjects",
+            container = MaterialTheme.colorScheme.secondaryContainer,
+            content = MaterialTheme.colorScheme.onSecondaryContainer,
+            shape = RoundedCornerShape(
+                topStart = STATS_OUTER_CORNER,
+                bottomStart = STATS_OUTER_CORNER,
+                topEnd = STATS_INNER_CORNER,
+                bottomEnd = STATS_INNER_CORNER,
+            ),
+            extraStartPadding = STATS_OUTER_EDGE_PADDING,
+            modifier = Modifier.weight(1f),
         )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            color = color.copy(alpha = 0.85f),
+        StatCard(
+            value = safe.toString(),
+            label = "Safe",
+            container = MaterialTheme.colorScheme.tertiaryContainer,
+            content = MaterialTheme.colorScheme.onTertiaryContainer,
+            shape = RoundedCornerShape(STATS_INNER_CORNER),
+            modifier = Modifier.weight(1f),
         )
+        StatCard(
+            value = atRisk.toString(),
+            label = "At risk",
+            container = if (atRisk > 0) MaterialTheme.colorScheme.errorContainer
+            else MaterialTheme.colorScheme.surfaceContainerHigh,
+            content = if (atRisk > 0) MaterialTheme.colorScheme.onErrorContainer
+            else MaterialTheme.colorScheme.onSurfaceVariant,
+            shape = RoundedCornerShape(
+                topEnd = STATS_OUTER_CORNER,
+                bottomEnd = STATS_OUTER_CORNER,
+                topStart = STATS_INNER_CORNER,
+                bottomStart = STATS_INNER_CORNER,
+            ),
+            extraEndPadding = STATS_OUTER_EDGE_PADDING,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun StatCard(
+    value: String,
+    label: String,
+    container: Color,
+    content: Color,
+    shape: Shape,
+    modifier: Modifier = Modifier,
+    extraStartPadding: Dp = 0.dp,
+    extraEndPadding: Dp = 0.dp,
+) {
+    AppCard(
+        modifier = modifier,
+        containerColor = container,
+        contentPadding = 16.dp,
+        shape = shape,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = extraStartPadding, end = extraEndPadding),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = content,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                color = content.copy(alpha = 0.85f),
+                textAlign = TextAlign.Center,
+            )
+        }
     }
 }
 
@@ -264,7 +350,7 @@ private fun SubjectCard(subject: SubjectAttendance, displayLabel: String, shape:
         else -> MaterialTheme.colorScheme.onErrorContainer
     }
 
-    AppCard(containerColor = MaterialTheme.colorScheme.surfaceContainerLow, shape = shape) {
+    AppCard(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh, shape = shape) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -296,7 +382,6 @@ private fun SubjectCard(subject: SubjectAttendance, displayLabel: String, shape:
 
         Spacer(Modifier.height(16.dp))
 
-        // Plain flat bar: no wave, no animation.
         LinearProgressIndicator(
             progress = { (subject.percent / 100.0).toFloat().coerceIn(0f, 1f) },
             modifier = Modifier
@@ -318,9 +403,14 @@ private fun SubjectCard(subject: SubjectAttendance, displayLabel: String, shape:
     }
 }
 
+// ───────────────────────────── Empty ─────────────────────────────
+
 @Composable
 private fun EmptyState() {
-    AppCard(containerColor = MaterialTheme.colorScheme.surfaceContainerLow, contentPadding = 28.dp) {
+    AppCard(
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        contentPadding = 28.dp,
+    ) {
         Text(
             text = "No attendance data yet",
             style = MaterialTheme.typography.titleLarge,
