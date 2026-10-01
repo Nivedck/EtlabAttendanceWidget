@@ -33,12 +33,10 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import androidx.glance.ColorFilter
-import androidx.glance.ImageProvider
-import io.github.shreyasskdev.tiledeck.R
 import io.github.shreyasskdev.tiledeck.data.AttendancePrefs
 import io.github.shreyasskdev.tiledeck.data.TimetableDayResult
 import io.github.shreyasskdev.tiledeck.data.TimetableResult
+import io.github.shreyasskdev.tiledeck.data.TimetableSubjectResult
 import io.github.shreyasskdev.tiledeck.ui.MainActivity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -122,8 +120,8 @@ class TimetableWidget : GlanceAppWidget() {
             modifier = GlanceModifier
                 .fillMaxSize()
                 .background(GlanceTheme.colors.background)
-                .cornerRadius(24.dp)
-                .padding(12.dp)
+                .cornerRadius(28.dp)
+                .padding(horizontal = 10.dp, vertical = 9.dp)
         ) {
             if (!hasCredentials || timetable == null) {
                 Box(
@@ -184,6 +182,7 @@ class TimetableWidget : GlanceAppWidget() {
                 TimetableGrid(
                     headerText = headerText,
                     schedule = todaySchedule,
+                    branchLabel = branchBadgeLabel(timetable),
                     subjectNameOverrides = subjectNameOverrides,
                     context = context
                 )
@@ -195,6 +194,7 @@ class TimetableWidget : GlanceAppWidget() {
     private fun TimetableGrid(
         headerText: String,
         schedule: TimetableDayResult,
+        branchLabel: String,
         subjectNameOverrides: Map<String, String>,
         context: Context
     ) {
@@ -203,31 +203,51 @@ class TimetableWidget : GlanceAppWidget() {
         val nowMinute = now.minute
 
         // Filter to only hours 1-6 and sort
-        val periods = schedule.subjects
-            .filter { it.hour in 1..6 }
-            .sortedBy { it.hour }
+        // Keep the island at exactly 2 rows x 3 columns even if the API omits
+        // an hour. Hour 7 is intentionally excluded by this range.
+        val periods = (1..6).map { hour ->
+            schedule.subjects.firstOrNull { it.hour == hour }
+                ?: TimetableSubjectResult(hour, "")
+        }
 
         Column(modifier = GlanceModifier.fillMaxSize()) {
-            // Header row: day • date
-            Text(
-                text = headerText,
-                style = TextStyle(
-                    color = GlanceTheme.colors.onBackground,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold
+            Row(
+                modifier = GlanceModifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = headerText,
+                    style = TextStyle(
+                        color = GlanceTheme.colors.onBackground,
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold
+                    ),
+                    modifier = GlanceModifier.defaultWeight()
                 )
-            )
 
-            Spacer(modifier = GlanceModifier.height(8.dp))
+                Text(
+                    text = branchLabel,
+                    style = TextStyle(
+                        color = GlanceTheme.colors.onTertiaryContainer,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    ),
+                    modifier = GlanceModifier
+                        .background(GlanceTheme.colors.tertiaryContainer)
+                        .cornerRadius(18.dp)
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                )
+            }
 
-            // 2×3 grid of period pills
+            Spacer(modifier = GlanceModifier.height(7.dp))
+
             val rows = periods.chunked(3)
             rows.forEachIndexed { rowIndex, rowPeriods ->
                 Row(
                     modifier = GlanceModifier
-                        .fillMaxWidth()
-                        .defaultWeight()
-                        .padding(bottom = if (rowIndex < rows.size - 1) 6.dp else 0.dp),
+                    .fillMaxWidth()
+                    .defaultWeight()
+                    .padding(bottom = if (rowIndex < rows.size - 1) 5.dp else 0.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     rowPeriods.forEachIndexed { colIndex, subject ->
@@ -235,7 +255,7 @@ class TimetableWidget : GlanceAppWidget() {
                         val shortName = resolveShortName(subject.subject, subjectNameOverrides)
 
                         PeriodPill(
-                            label = shortName,
+                            label = shortName.ifBlank { "FREE" },
                             hour = subject.hour,
                             isCurrent = isCurrentPeriod,
                             context = context,
@@ -243,14 +263,7 @@ class TimetableWidget : GlanceAppWidget() {
                         )
 
                         if (colIndex < rowPeriods.size - 1) {
-                            Spacer(modifier = GlanceModifier.width(6.dp))
-                        }
-                        // Fill remaining space if row has fewer than 3 items
-                        if (colIndex == rowPeriods.size - 1 && rowPeriods.size < 3) {
-                            repeat(3 - rowPeriods.size) {
-                                Spacer(modifier = GlanceModifier.width(6.dp))
-                                Box(modifier = GlanceModifier.defaultWeight().fillMaxHeight()) {}
-                            }
+                            Spacer(modifier = GlanceModifier.width(5.dp))
                         }
                     }
                 }
@@ -266,27 +279,26 @@ class TimetableWidget : GlanceAppWidget() {
         context: Context,
         modifier: GlanceModifier
     ) {
-        val bgColor = if (isCurrent)
+        val background = if (isCurrent) {
             GlanceTheme.colors.primaryContainer
-        else
+        } else {
             GlanceTheme.colors.secondaryContainer
-
-        val textColor = if (isCurrent)
+        }
+        val textColor = if (isCurrent) {
             GlanceTheme.colors.onPrimaryContainer
-        else
+        } else {
             GlanceTheme.colors.onSecondaryContainer
+        }
 
         val timeStr = PERIOD_START_TIMES[hour]?.let { (h, m) ->
-            "%d:%02d".format(h, m)
+            "%d:%02d".format(if (h > 12) h - 12 else h, m)
         } ?: ""
 
         Box(
             modifier = modifier
-                .background(
-                    imageProvider = ImageProvider(R.drawable.bg_card_inner),
-                    colorFilter = ColorFilter.tint(bgColor)
-                )
-                .padding(horizontal = 4.dp, vertical = 2.dp)
+                .background(background)
+                .cornerRadius(22.dp)
+                .padding(horizontal = 5.dp, vertical = 3.dp)
                 .clickable(actionStartActivity(Intent(context, MainActivity::class.java))),
             contentAlignment = Alignment.Center
         ) {
@@ -300,7 +312,8 @@ class TimetableWidget : GlanceAppWidget() {
                         color = textColor,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
-                    )
+                    ),
+                    maxLines = 2
                 )
                 if (timeStr.isNotEmpty()) {
                     Spacer(modifier = GlanceModifier.width(3.dp))
@@ -315,6 +328,27 @@ class TimetableWidget : GlanceAppWidget() {
                 }
             }
         }
+    }
+
+    /** Derives the badge from course identity instead of user-specific settings. */
+    private fun branchBadgeLabel(timetable: TimetableResult): String {
+        val courseCode = timetable.timetable
+            .asSequence()
+            .flatMap { it.subjects.asSequence() }
+            .map { it.subject.substringBefore(" - ").trim().uppercase() }
+            .firstOrNull { it.matches(Regex("PC[A-Z]{2}T[0-9]{3}")) }
+            ?: return "BRANCH"
+
+        val match = Regex("^PC([A-Z]{2})T([0-9])").find(courseCode) ?: return "BRANCH"
+        val branchCode = match.groupValues[1]
+        val semester = match.groupValues[2]
+        val branchName = when (branchCode) {
+            "EC" -> "ECE"
+            "CS" -> "CSE"
+            "EE" -> "EEE"
+            else -> branchCode
+        }
+        return "S$semester $branchName"
     }
 
     /**

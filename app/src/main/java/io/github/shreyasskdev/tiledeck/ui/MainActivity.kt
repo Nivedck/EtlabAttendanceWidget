@@ -103,6 +103,8 @@ import io.github.shreyasskdev.tiledeck.widget.ATTENDANCE_WIDGET_UPDATE_KEY
 import io.github.shreyasskdev.tiledeck.widget.AttendanceWidget
 import io.github.shreyasskdev.tiledeck.widget.TOTAL_WIDGET_UPDATE_KEY
 import io.github.shreyasskdev.tiledeck.widget.TotalPercentageWidget
+import io.github.shreyasskdev.tiledeck.widget.TIMETABLE_WIDGET_UPDATE_KEY
+import io.github.shreyasskdev.tiledeck.widget.TimetableWidget
 import io.github.shreyasskdev.tiledeck.widget.enqueueWidgetRefresh
 import io.github.shreyasskdev.tiledeck.work.AttendanceWorker
 import kotlinx.coroutines.Dispatchers
@@ -188,8 +190,21 @@ suspend fun refreshAttendanceWidgets(context: Context) {
             }
         }
 
+        val timetableIds = attendanceManager.getGlanceIds(TimetableWidget::class.java)
+        timetableIds.forEach { glanceId ->
+            runCatching {
+                updateAppWidgetState(appContext, PreferencesGlanceStateDefinition, glanceId) { prefs ->
+                    prefs.toMutablePreferences().apply {
+                        this[TIMETABLE_WIDGET_UPDATE_KEY] = now
+                    }
+                }
+                TimetableWidget().update(appContext, glanceId)
+            }
+        }
+
         AttendanceWidget().updateAll(appContext)
         TotalPercentageWidget().updateAll(appContext)
+        TimetableWidget().updateAll(appContext)
     } catch (e: Exception) {
         Log.e(TAG, "refreshAttendanceWidgets failed", e)
     }
@@ -267,11 +282,12 @@ fun AttendanceExpressiveApp() {
             AppScope.scope.launch {
                 try {
                     val repo = EtlabRepository()
-                    val fetched: AttendanceResult =
-                        repo.fetchAttendance(username.trim(), password).attendance
+                    val fetchResult = repo.fetchAttendance(username.trim(), password)
+                    val fetched: AttendanceResult = fetchResult.attendance
 
                     prefs.saveCredentials(username.trim(), password)
                     prefs.saveLastResult(fetched)
+                    fetchResult.timetable?.let { prefs.saveLastTimetable(it) }
 
                     refreshAttendanceWidgets(appContext)
                     AttendanceWorker.schedulePeriodic(appContext)
