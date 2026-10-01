@@ -1,9 +1,9 @@
 package io.github.shreyasskdev.tiledeck.ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,7 +11,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -19,20 +23,88 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * Shared building blocks for the "grouped, colorful list" pattern used by the
- * Android 16 Settings app and the Google Account app: a run of rows that
- * share one rounded container — big corners at the very top/bottom of the
- * group, tight corners between neighbors — each row led by a flat-color
- * icon badge. Used across Overview, Customize and Settings so the whole app
- * reads as one consistent expressive system rather than a pile of cards.
+ * ONE corner radius for every card/container in the app. Anything smaller than a
+ * card (chips, badges, buttons) is a fully-round pill via [CircleShape].
+ * Change it here and the whole app follows.
  */
+internal val AppCardShape = RoundedCornerShape(28.dp)
 
+/** The single card primitive used by Overview, Customize, Settings and About. */
+@Composable
+internal fun AppCard(
+    modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    contentPadding: Dp = 20.dp,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Surface(
+        shape = AppCardShape,
+        color = containerColor,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(contentPadding), content = content)
+    }
+}
+
+/**
+ * Expressive circular icon button used in top app bars and headers across the app.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+internal fun CircleIconButton(
+    onClick: () -> Unit,
+    icon: ImageVector,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    loading: Boolean = false,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+) {
+    Surface(
+        onClick = onClick,
+        enabled = enabled && !loading,
+        shape = CircleShape,
+        color = containerColor,
+        contentColor = contentColor,
+        modifier = modifier
+            .size(42.dp)
+            .semantics {
+                contentDescription?.let { this.contentDescription = it }
+            },
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (loading) {
+                LoadingIndicator(
+                    modifier = Modifier.size(28.dp),
+                    color = contentColor,
+                )
+            } else {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Grouped list pattern. Every row now uses the same [AppCardShape]; the
+ * [GroupPosition] parameter is kept so existing call sites don't break.
+ */
 internal enum class GroupPosition { Single, Top, Middle, Bottom }
 
 internal fun groupPosition(index: Int, count: Int): GroupPosition = when {
@@ -42,22 +114,6 @@ internal fun groupPosition(index: Int, count: Int): GroupPosition = when {
     else -> GroupPosition.Middle
 }
 
-private fun groupShape(position: GroupPosition): RoundedCornerShape {
-    val large = 26.dp
-    val small = 6.dp
-    return when (position) {
-        GroupPosition.Single -> RoundedCornerShape(large)
-        GroupPosition.Top -> RoundedCornerShape(topStart = large, topEnd = large, bottomStart = small, bottomEnd = small)
-        GroupPosition.Middle -> RoundedCornerShape(small)
-        GroupPosition.Bottom -> RoundedCornerShape(topStart = small, topEnd = small, bottomStart = large, bottomEnd = large)
-    }
-}
-
-/**
- * A small palette of container/on-container token pairs to cycle icon
- * badges through. Pulled from the live [MaterialTheme.colorScheme] (so it
- * follows dynamic color) rather than hardcoded hues.
- */
 @Composable
 internal fun expressiveBadgePalette(): List<Pair<Color, Color>> {
     val scheme = MaterialTheme.colorScheme
@@ -69,7 +125,7 @@ internal fun expressiveBadgePalette(): List<Pair<Color, Color>> {
     )
 }
 
-/** Rounded-square flat-color badge that leads a [GroupedRow], e.g. holding a small icon or initials. */
+/** Circular flat-color badge that leads a [GroupedRow]. */
 @Composable
 internal fun IconBadge(
     containerColor: Color,
@@ -77,9 +133,9 @@ internal fun IconBadge(
     content: @Composable () -> Unit,
 ) {
     Surface(
-        shape = RoundedCornerShape(14.dp),
+        shape = CircleShape,
         color = containerColor,
-        modifier = modifier.size(40.dp),
+        modifier = modifier.size(44.dp),
     ) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             content()
@@ -87,7 +143,7 @@ internal fun IconBadge(
     }
 }
 
-/** One row inside a [GroupedList]: badge, title/subtitle, and an optional trailing slot. */
+/** One row inside a [GroupedList]: badge, title/subtitle, optional trailing slot. */
 @Composable
 internal fun GroupedRow(
     position: GroupPosition,
@@ -99,21 +155,7 @@ internal fun GroupedRow(
     rowContentDescription: String? = null,
     trailing: (@Composable () -> Unit)? = null,
 ) {
-    val clickableModifier = if (onClick != null) {
-        Modifier
-            .clickable(onClick = onClick)
-            .semantics { contentDescription = rowContentDescription ?: title }
-    } else {
-        Modifier
-    }
-
-    Surface(
-        shape = groupShape(position),
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(clickableModifier),
-    ) {
+    val rowContent: @Composable () -> Unit = {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -121,18 +163,18 @@ internal fun GroupedRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconBadge(containerColor = badgeColor) { badgeContent() }
-            Spacer(Modifier.width(14.dp))
+            Spacer(Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 if (subtitle != null) {
                     Text(
                         text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -143,27 +185,46 @@ internal fun GroupedRow(
             }
         }
     }
+
+    if (onClick != null) {
+        Surface(
+            onClick = onClick,
+            shape = AppCardShape,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = rowContentDescription ?: title },
+            content = rowContent,
+        )
+    } else {
+        Surface(
+            shape = AppCardShape,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            modifier = Modifier.fillMaxWidth(),
+            content = rowContent,
+        )
+    }
 }
 
-/** Vertical run of [GroupedRow]s, 2dp apart, that together form one rounded settings group. */
+/** Vertical run of [GroupedRow]s. */
 @Composable
 internal fun GroupedList(
     rows: List<@Composable () -> Unit>,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         rows.forEach { row -> row() }
     }
 }
 
-/** Small section label ("ACCOUNT", "SYNC"...) sitting above a [GroupedList], as in the reference apps. */
+/** Small section label sitting above a card or list. */
 @Composable
 internal fun GroupLabel(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text.uppercase(),
-        style = MaterialTheme.typography.labelMedium,
+        style = MaterialTheme.typography.labelLarge,
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.primary,
-        modifier = modifier.padding(start = 8.dp, bottom = 2.dp),
+        modifier = modifier.padding(start = 8.dp, top = 4.dp),
     )
 }
