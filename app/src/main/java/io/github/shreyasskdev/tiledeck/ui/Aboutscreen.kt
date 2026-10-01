@@ -22,7 +22,7 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -381,10 +381,14 @@ private fun DevelopersSheet(developers: List<Developer>, onDismiss: () -> Unit) 
 
             LazyColumn(
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                items(developers, key = { it.login }) { dev ->
-                    DeveloperRow(dev, onClick = { uriHandler.openUri(dev.profileUrl) })
+                itemsIndexed(developers, key = { _, dev -> dev.login }) { index, dev ->
+                    DeveloperRow(
+                        dev = dev,
+                        position = groupPosition(index, developers.size),
+                        onClick = { uriHandler.openUri(dev.profileUrl) },
+                    )
                 }
             }
         }
@@ -392,10 +396,10 @@ private fun DevelopersSheet(developers: List<Developer>, onDismiss: () -> Unit) 
 }
 
 @Composable
-private fun DeveloperRow(dev: Developer, onClick: () -> Unit) {
+private fun DeveloperRow(dev: Developer, position: GroupPosition, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
-        shape = AppCardShape,
+        shape = groupShape(position),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         modifier = Modifier.fillMaxWidth(),
     ) {

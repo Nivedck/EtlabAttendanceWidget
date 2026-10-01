@@ -1,16 +1,15 @@
 package io.github.shreyasskdev.tiledeck.ui
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -25,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -46,35 +46,31 @@ internal fun CustomizationTab(
     onSave: () -> Unit,
 ) {
     val palette = expressiveBadgePalette()
+    val subjects = result?.subjects.orEmpty()
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 20.dp, top = 8.dp, end = 20.dp, bottom = 108.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        item { GroupLabel("Display") }
         item {
-            GroupedList(
-                rows = listOf(
-                    {
+            Section("Display") {
+                TileColumn(count = 2) { index, position ->
+                    if (index == 0) {
                         GroupedRow(
-                            position = GroupPosition.Top,
+                            position = position,
                             title = "Use my custom names",
                             subtitle = "Show your own labels in the app and widgets",
                             badgeColor = palette[0].first,
                             badgeContent = { EditIcon(tint = palette[0].second) },
                             onClick = { onUseCustomNamesChange(!useCustomNames) },
                             trailing = {
-                                Switch(
-                                    checked = useCustomNames,
-                                    onCheckedChange = onUseCustomNamesChange,
-                                )
+                                Switch(checked = useCustomNames, onCheckedChange = onUseCustomNamesChange)
                             },
                         )
-                    },
-                    {
+                    } else {
                         GroupedRow(
-                            position = GroupPosition.Bottom,
+                            position = position,
                             title = "Shorthand auto-generator",
                             subtitle = "Fill empty names with short forms",
                             badgeColor = palette[2].first,
@@ -90,23 +86,26 @@ internal fun CustomizationTab(
                                 )
                             },
                         )
-                    },
-                ),
-            )
+                    }
+                }
+            }
         }
 
-        if (result != null && result.subjects.isNotEmpty()) {
-            item { GroupLabel("Per-subject names") }
-
-            items(result.subjects) { subject ->
-                val original = subject.name.ifBlank { subject.code }
-                SubjectOverrideCard(
-                    subjectCode = subject.code,
-                    originalName = original,
-                    overrideValue = nameOverrides[subject.code].orEmpty(),
-                    enabled = useCustomNames,
-                    onValueChange = { input -> onOverrideChange(subject.code, input) },
-                )
+        if (subjects.isNotEmpty()) {
+            item {
+                Section("Per-subject names") {
+                    TileColumn(subjects.size) { index, position ->
+                        val subject = subjects[index]
+                        SubjectOverrideCard(
+                            subjectCode = subject.code,
+                            originalName = subject.name.ifBlank { subject.code },
+                            overrideValue = nameOverrides[subject.code].orEmpty(),
+                            enabled = useCustomNames,
+                            shape = groupShape(position),
+                            onValueChange = { input -> onOverrideChange(subject.code, input) },
+                        )
+                    }
+                }
             }
 
             item {
@@ -155,12 +154,14 @@ private fun SubjectOverrideCard(
     originalName: String,
     overrideValue: String,
     enabled: Boolean,
+    shape: Shape,
     onValueChange: (String) -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
     val shorthand = remember(originalName) { toShorthand(originalName) }
 
     AppCard(
+        shape = shape,
         containerColor = if (enabled) MaterialTheme.colorScheme.surfaceContainerLow
         else MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.45f),
     ) {
@@ -229,7 +230,7 @@ private fun SubjectOverrideCard(
             },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-            shape = AppCardShape,
+            shape = CircleShape,
             modifier = Modifier.fillMaxWidth(),
         )
     }

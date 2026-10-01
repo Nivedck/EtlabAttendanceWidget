@@ -1,6 +1,5 @@
 package io.github.shreyasskdev.tiledeck.ui
 
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,20 +12,22 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularWavyProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.LinearWavyProgressIndicator
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -36,6 +37,7 @@ import io.github.shreyasskdev.tiledeck.data.AttendanceResult
 import io.github.shreyasskdev.tiledeck.data.SubjectAttendance
 
 private const val SAFE_THRESHOLD = 75.0
+private const val COMFY_THRESHOLD = 85.0
 
 @Composable
 internal fun OverviewTab(
@@ -46,33 +48,40 @@ internal fun OverviewTab(
     useCustomNames: Boolean,
     onRefresh: () -> Unit,
 ) {
+    val subjects = result?.subjects.orEmpty()
+    val hasSubjects = result != null && subjects.isNotEmpty()
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 20.dp, top = 8.dp, end = 20.dp, bottom = 108.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
+        // One card: overall attendance + safe + at risk.
         item {
-            HeroAttendanceCard(
+            SummaryCard(
                 result = result,
+                safe = subjects.count { it.percent >= SAFE_THRESHOLD },
+                atRisk = subjects.count { it.percent < SAFE_THRESHOLD },
                 updatedText = updatedText,
                 loading = loading,
                 onRefresh = onRefresh,
             )
         }
 
-        if (result != null && result.subjects.isNotEmpty()) {
-            item { StatsRow(result.subjects) }
-
-            item { GroupLabel("Subject breakdown") }
-
-            items(result.subjects) { subject ->
-                val override = nameOverrides[subject.code]
-                val displayLabel = when {
-                    useCustomNames && !override.isNullOrBlank() -> override
-                    subject.name.isNotBlank() -> subject.name
-                    else -> subject.code
+        if (hasSubjects) {
+            item {
+                Section("Subject breakdown") {
+                    TileColumn(subjects.size) { index, position ->
+                        val subject = subjects[index]
+                        val override = nameOverrides[subject.code]
+                        val label = when {
+                            useCustomNames && !override.isNullOrBlank() -> override
+                            subject.name.isNotBlank() -> subject.name
+                            else -> subject.code
+                        }
+                        SubjectCard(subject, label, groupShape(position))
+                    }
                 }
-                SubjectCard(subject = subject, displayLabel = displayLabel)
             }
         } else {
             item { EmptyState() }
@@ -80,12 +89,13 @@ internal fun OverviewTab(
     }
 }
 
-// ───────────────────────────── Hero ─────────────────────────────
+// ───────────────────────────── Summary group ─────────────────────────────
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun HeroAttendanceCard(
+private fun SummaryCard(
     result: AttendanceResult?,
+    safe: Int,
+    atRisk: Int,
     updatedText: String,
     loading: Boolean,
     onRefresh: () -> Unit,
@@ -104,28 +114,25 @@ private fun HeroAttendanceCard(
         else -> MaterialTheme.colorScheme.onErrorContainer
     }
 
-    val progress by animateFloatAsState(
-        targetValue = (overall / 100.0).toFloat().coerceIn(0f, 1f),
-        label = "OverallProgress",
-    )
-
     AppCard(containerColor = containerBg, contentPadding = 24.dp) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(20.dp),
         ) {
+            // Plain, static ring — no wave, no animation.
             Box(
                 modifier = Modifier
-                    .size(136.dp)
+                    .size(124.dp)
                     .semantics { contentDescription = "Overall attendance %.1f percent".format(overall) },
                 contentAlignment = Alignment.Center,
             ) {
-                CircularWavyProgressIndicator(
-                    progress = { progress },
+                CircularProgressIndicator(
+                    progress = { (overall / 100.0).toFloat().coerceIn(0f, 1f) },
                     modifier = Modifier.fillMaxSize(),
                     color = contentFg,
                     trackColor = contentFg.copy(alpha = 0.18f),
+                    strokeWidth = 10.dp,
                 )
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
@@ -174,16 +181,41 @@ private fun HeroAttendanceCard(
             }
         }
 
+        if (result != null) {
+            Spacer(Modifier.height(20.dp))
+            HorizontalDivider(color = contentFg.copy(alpha = 0.18f))
+            Spacer(Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                SummaryStat(
+                    value = safe,
+                    label = "Safe subjects",
+                    color = contentFg,
+                    modifier = Modifier.weight(1f),
+                )
+                VerticalDivider(
+                    modifier = Modifier.height(44.dp),
+                    color = contentFg.copy(alpha = 0.18f),
+                )
+                SummaryStat(
+                    value = atRisk,
+                    label = "At risk",
+                    color = contentFg,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+
         Spacer(Modifier.height(20.dp))
 
         Button(
             onClick = onRefresh,
             enabled = !loading,
             shape = CircleShape,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = contentFg,
-                contentColor = containerBg,
-            ),
+            colors = ButtonDefaults.buttonColors(containerColor = contentFg, contentColor = containerBg),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
@@ -197,77 +229,28 @@ private fun HeroAttendanceCard(
     }
 }
 
-// ───────────────────────────── Stats ─────────────────────────────
-
 @Composable
-private fun StatsRow(subjects: List<SubjectAttendance>) {
-    val safe = subjects.count { it.percent >= SAFE_THRESHOLD }
-    val atRisk = subjects.size - safe
-
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        StatCard(
-            value = subjects.size.toString(),
-            label = "Subjects",
-            container = MaterialTheme.colorScheme.secondaryContainer,
-            content = MaterialTheme.colorScheme.onSecondaryContainer,
-            modifier = Modifier.weight(1f),
-        )
-        StatCard(
-            value = safe.toString(),
-            label = "Safe",
-            container = MaterialTheme.colorScheme.tertiaryContainer,
-            content = MaterialTheme.colorScheme.onTertiaryContainer,
-            modifier = Modifier.weight(1f),
-        )
-        StatCard(
-            value = atRisk.toString(),
-            label = "At risk",
-            container = if (atRisk > 0) MaterialTheme.colorScheme.errorContainer
-            else MaterialTheme.colorScheme.surfaceContainerHigh,
-            content = if (atRisk > 0) MaterialTheme.colorScheme.onErrorContainer
-            else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
-        )
-    }
-}
-
-@Composable
-private fun StatCard(
-    value: String,
-    label: String,
-    container: androidx.compose.ui.graphics.Color,
-    content: androidx.compose.ui.graphics.Color,
-    modifier: Modifier = Modifier,
-) {
-    AppCard(modifier = modifier, containerColor = container, contentPadding = 16.dp) {
+private fun SummaryStat(value: Int, label: String, color: Color, modifier: Modifier = Modifier) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            text = value,
+            text = value.toString(),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            color = content,
+            color = color,
         )
         Text(
             text = label,
             style = MaterialTheme.typography.labelLarge,
-            color = content.copy(alpha = 0.85f),
+            color = color.copy(alpha = 0.85f),
         )
     }
 }
 
 // ───────────────────────────── Subjects ─────────────────────────────
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun SubjectCard(subject: SubjectAttendance, displayLabel: String) {
-    val progress by animateFloatAsState(
-        targetValue = (subject.percent / 100.0).toFloat().coerceIn(0f, 1f),
-        label = "SubjectProgress",
-    )
-
-    val isGood = subject.percent >= 85.0
+private fun SubjectCard(subject: SubjectAttendance, displayLabel: String, shape: Shape) {
+    val isGood = subject.percent >= COMFY_THRESHOLD
     val isFair = subject.percent >= SAFE_THRESHOLD
 
     val chipBg = when {
@@ -281,7 +264,7 @@ private fun SubjectCard(subject: SubjectAttendance, displayLabel: String) {
         else -> MaterialTheme.colorScheme.onErrorContainer
     }
 
-    AppCard(containerColor = MaterialTheme.colorScheme.surfaceContainerLow) {
+    AppCard(containerColor = MaterialTheme.colorScheme.surfaceContainerLow, shape = shape) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -313,10 +296,13 @@ private fun SubjectCard(subject: SubjectAttendance, displayLabel: String) {
 
         Spacer(Modifier.height(16.dp))
 
-        LinearWavyProgressIndicator(
-            progress = { progress },
+        // Plain flat bar: no wave, no animation.
+        LinearProgressIndicator(
+            progress = { (subject.percent / 100.0).toFloat().coerceIn(0f, 1f) },
             modifier = Modifier
                 .fillMaxWidth()
+                .height(8.dp)
+                .clip(CircleShape)
                 .semantics { contentDescription = "${subject.percent.toInt()} percent attendance" },
             color = if (isFair) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
             trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,

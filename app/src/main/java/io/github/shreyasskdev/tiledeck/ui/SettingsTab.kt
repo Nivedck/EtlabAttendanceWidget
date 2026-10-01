@@ -10,12 +10,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -25,10 +29,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.shreyasskdev.tiledeck.BuildConfig
 import io.github.shreyasskdev.tiledeck.data.UpdateStatus
@@ -54,55 +58,63 @@ internal fun SettingsTab(
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 20.dp, top = 8.dp, end = 20.dp, bottom = 108.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        item { GroupLabel("Account") }
         item {
-            CredentialsCard(
-                username = username,
-                onUsernameChange = onUsernameChange,
-                password = password,
-                onPasswordChange = onPasswordChange,
-                loading = loading,
-                onSave = onLoginSave,
-            )
+            Section("Account") {
+                CredentialsCard(
+                    username = username,
+                    onUsernameChange = onUsernameChange,
+                    password = password,
+                    onPasswordChange = onPasswordChange,
+                    loading = loading,
+                    onSave = onLoginSave,
+                )
+            }
         }
 
-        item { GroupLabel("Sync") }
         item {
-            BackgroundRefreshCard(
-                currentMinutes = refreshInterval,
-                onIntervalSelected = onIntervalSelected,
-            )
+            Section("Sync") {
+                BackgroundRefreshCard(
+                    currentMinutes = refreshInterval,
+                    onIntervalSelected = onIntervalSelected,
+                )
+            }
         }
 
-        item { GroupLabel("App") }
+        // Version + About are related, so they touch.
         item {
-            VersionCard(
-                status = updateStatus,
-                lastCheckedAt = lastCheckedAt,
-                onCheckForUpdates = onCheckForUpdates,
-                onInstallUpdate = onInstallUpdate,
-            )
-        }
-        item {
-            GroupedRow(
-                position = GroupPosition.Single,
-                title = "About & privacy",
-                subtitle = "Developers, data policy and how credentials are handled",
-                badgeColor = palette[1].first,
-                badgeContent = {
-                    Text(
-                        text = "i",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = palette[1].second,
-                    )
-                },
-                onClick = onOpenAbout,
-                rowContentDescription = "Open About and privacy screen",
-                trailing = { ChevronIcon(tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-            )
+            Section("App") {
+                TileColumn(count = 2) { index, position ->
+                    if (index == 0) {
+                        VersionCard(
+                            status = updateStatus,
+                            lastCheckedAt = lastCheckedAt,
+                            onCheckForUpdates = onCheckForUpdates,
+                            onInstallUpdate = onInstallUpdate,
+                            shape = groupShape(position),
+                        )
+                    } else {
+                        GroupedRow(
+                            position = position,
+                            title = "About & privacy",
+                            subtitle = "Developers, data policy and how credentials are handled",
+                            badgeColor = palette[1].first,
+                            badgeContent = {
+                                Text(
+                                    text = "i",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = palette[1].second,
+                                )
+                            },
+                            onClick = onOpenAbout,
+                            rowContentDescription = "Open About and privacy screen",
+                            trailing = { ChevronIcon(tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -136,7 +148,7 @@ private fun CredentialsCard(
             onValueChange = onUsernameChange,
             label = { Text("Etlab username") },
             singleLine = true,
-            shape = AppCardShape,
+            shape = CircleShape,
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(12.dp))
@@ -146,7 +158,7 @@ private fun CredentialsCard(
             label = { Text("Etlab password") },
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
-            shape = AppCardShape,
+            shape = CircleShape,
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(20.dp))
@@ -209,7 +221,7 @@ private fun BackgroundRefreshCard(
                                 text = label,
                                 style = MaterialTheme.typography.labelLarge,
                                 modifier = Modifier.fillMaxWidth(),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                textAlign = TextAlign.Center,
                             )
                         },
                         shape = CircleShape,
@@ -230,6 +242,7 @@ private fun VersionCard(
     lastCheckedAt: Long?,
     onCheckForUpdates: () -> Unit,
     onInstallUpdate: () -> Unit,
+    shape: Shape,
 ) {
     val currentVersion = remember {
         runCatching { BuildConfig.VERSION_NAME }.getOrDefault("unknown")
@@ -241,14 +254,12 @@ private fun VersionCard(
         is UpdateStatus.Available -> "Update available — v${status.version}"
         is UpdateStatus.Error -> "Couldn't check for updates"
     }
-
     val chipText = when (status) {
         null -> "CHECKING"
         is UpdateStatus.UpToDate -> "UP TO DATE"
         is UpdateStatus.Available -> "UPDATE"
         is UpdateStatus.Error -> "OFFLINE"
     }
-
     val chipBg = when (status) {
         null -> MaterialTheme.colorScheme.surfaceContainerHighest
         is UpdateStatus.UpToDate -> MaterialTheme.colorScheme.tertiaryContainer
@@ -261,7 +272,6 @@ private fun VersionCard(
         is UpdateStatus.Available -> MaterialTheme.colorScheme.onPrimaryContainer
         is UpdateStatus.Error -> MaterialTheme.colorScheme.onErrorContainer
     }
-
     val supportingText = when (status) {
         null -> "Fetching the latest release info from GitHub."
         is UpdateStatus.UpToDate -> lastCheckedAt?.let { "Last checked ${relativeTime(it)}" }
@@ -271,7 +281,7 @@ private fun VersionCard(
         is UpdateStatus.Error -> status.message
     }
 
-    AppCard {
+    AppCard(shape = shape) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -295,38 +305,16 @@ private fun VersionCard(
 
         Spacer(Modifier.height(12.dp))
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "v$currentVersion",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    text = headline,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            IconButton(
-                onClick = onCheckForUpdates,
-                enabled = status != null,
-                modifier = Modifier
-                    .size(52.dp)
-                    .semantics { contentDescription = "Check for updates" },
-            ) {
-                if (status == null) {
-                    LoadingIndicator(modifier = Modifier.size(36.dp))
-                } else {
-                    RefreshIcon(tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-        }
+        Text(
+            text = "v$currentVersion",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            text = headline,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
 
         Spacer(Modifier.height(8.dp))
 
@@ -336,9 +324,10 @@ private fun VersionCard(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
+        Spacer(Modifier.height(16.dp))
+
         val available = status as? UpdateStatus.Available
         if (available != null) {
-            Spacer(Modifier.height(16.dp))
             Button(
                 onClick = onInstallUpdate,
                 shape = CircleShape,
@@ -352,6 +341,29 @@ private fun VersionCard(
                     fontWeight = FontWeight.Bold,
                 )
             }
+            Spacer(Modifier.height(8.dp))
+        }
+
+        // A labelled button instead of a bare icon, so it's obvious what it does.
+        FilledTonalButton(
+            onClick = onCheckForUpdates,
+            enabled = status != null,
+            shape = CircleShape,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+        ) {
+            if (status == null) {
+                LoadingIndicator(modifier = Modifier.size(28.dp))
+            } else {
+                Icon(Icons.Outlined.Refresh, contentDescription = null, modifier = Modifier.size(20.dp))
+            }
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = if (status == null) "Checking…" else "Check for updates",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+            )
         }
     }
 }
