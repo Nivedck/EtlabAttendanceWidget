@@ -64,4 +64,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:5.5.0")
     implementation("com.squareup.okhttp3:logging-interceptor:5.5.0")
 
+    // NEW — Glance preview support
+    implementation("androidx.glance:glance-appwidget-preview:1.3.0-alpha02")
+    implementation("androidx.glance:glance-preview:1.3.0-alpha02")
 }
