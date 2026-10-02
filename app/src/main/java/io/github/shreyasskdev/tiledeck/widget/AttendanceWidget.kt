@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -26,6 +27,8 @@ import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.PreviewSizeMode
+import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
@@ -63,6 +66,25 @@ class AttendanceWidget : GlanceAppWidget() {
 
     override val stateDefinition: GlanceStateDefinition<Preferences> = PreferencesGlanceStateDefinition
 
+    /**
+     * Tells the preview renderer which sizes to run the composable at.
+     *
+     * Default is `SizeMode.Single`, which renders at the widget's minimum
+     * size only — so a 4×2 widget placed on a home screen shows a preview
+     * that looks like a 4×1 (missing the bottom row of subjects).
+     *
+     * `SizeMode.Responsive` runs the composable at each DpSize listed and
+     * sends all of them to the launcher, so the widget picker renders the
+     * one that matches the cell size the user drags it into.
+     */
+    override val previewSizeMode: PreviewSizeMode
+        get() = SizeMode.Responsive(
+            setOf(
+                DpSize(280.dp, 140.dp), // 4×2 — full layout with all subjects
+                DpSize(140.dp, 140.dp), // 2×2 — same layout, squeezed
+            )
+        )
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val appContext = context.applicationContext
 
@@ -83,8 +105,30 @@ class AttendanceWidget : GlanceAppWidget() {
         }
     }
 
+    /**
+     * Android 15+ path. Called by the system when the launcher wants to
+     * render the widget picker preview. Unlike [provideGlance], this runs
+     * once — no recomposition, no effects.
+     */
+    override suspend fun providePreview(context: Context, widgetCategory: Int) {
+        val appContext = context.applicationContext
+
+        provideContent {
+            val prefs = AttendancePrefs(appContext)
+            val result = prefs.getLastResult()
+            val updatedText = prefs.getLastUpdatedText()
+            val hasCredentials = prefs.hasCredentials()
+            val subjectNameOverrides = prefs.getSubjectNames()
+            val useCustomNames = prefs.getUseCustomNames()
+
+            GlanceTheme {
+                WidgetContent(hasCredentials, result, updatedText, subjectNameOverrides, useCustomNames)
+            }
+        }
+    }
+
     @Composable
-    private fun WidgetContent(
+    internal fun WidgetContent(
         hasCredentials: Boolean,
         result: AttendanceResult?,
         updatedText: String,
