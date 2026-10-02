@@ -1,17 +1,22 @@
 package io.github.shreyasskdev.tiledeck.ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -19,20 +24,33 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-/**
- * Shared building blocks for the "grouped, colorful list" pattern used by the
- * Android 16 Settings app and the Google Account app: a run of rows that
- * share one rounded container — big corners at the very top/bottom of the
- * group, tight corners between neighbors — each row led by a flat-color
- * icon badge. Used across Overview, Customize and Settings so the whole app
- * reads as one consistent expressive system rather than a pile of cards.
- */
+// ─────────────────────────────────────────────────────────────────────────────
+//  Tile system (Android 16/17 Settings style)
+//
+//  • A tile on its own, or at the outside edge of a group  -> CornerLarge
+//  • A tile edge that touches another tile                  -> CornerSmall
+//  • Touching tiles sit 2dp apart so they read as one group.
+// ─────────────────────────────────────────────────────────────────────────────
 
+internal val CornerLarge = 28.dp
+internal val CornerSmall = 6.dp
+internal val TileGap = 2.dp
+
+/** Shape for a standalone tile. */
+internal val AppCardShape = RoundedCornerShape(CornerLarge)
+
+/**
+ * Position inside a group. For a vertical group Top = first, Bottom = last.
+ * For a horizontal group Top = start, Bottom = end.
+ */
 internal enum class GroupPosition { Single, Top, Middle, Bottom }
 
 internal fun groupPosition(index: Int, count: Int): GroupPosition = when {
@@ -42,22 +60,114 @@ internal fun groupPosition(index: Int, count: Int): GroupPosition = when {
     else -> GroupPosition.Middle
 }
 
-private fun groupShape(position: GroupPosition): RoundedCornerShape {
-    val large = 26.dp
-    val small = 6.dp
+internal fun groupShape(position: GroupPosition, horizontal: Boolean = false): RoundedCornerShape {
+    val l = CornerLarge
+    val s = CornerSmall
     return when (position) {
-        GroupPosition.Single -> RoundedCornerShape(large)
-        GroupPosition.Top -> RoundedCornerShape(topStart = large, topEnd = large, bottomStart = small, bottomEnd = small)
-        GroupPosition.Middle -> RoundedCornerShape(small)
-        GroupPosition.Bottom -> RoundedCornerShape(topStart = small, topEnd = small, bottomStart = large, bottomEnd = large)
+        GroupPosition.Single -> RoundedCornerShape(l)
+        GroupPosition.Middle -> RoundedCornerShape(s)
+        GroupPosition.Top ->
+            if (horizontal) RoundedCornerShape(topStart = l, topEnd = s, bottomEnd = s, bottomStart = l)
+            else RoundedCornerShape(topStart = l, topEnd = l, bottomEnd = s, bottomStart = s)
+        GroupPosition.Bottom ->
+            if (horizontal) RoundedCornerShape(topStart = s, topEnd = l, bottomEnd = l, bottomStart = s)
+            else RoundedCornerShape(topStart = s, topEnd = s, bottomEnd = l, bottomStart = l)
     }
 }
 
-/**
- * A small palette of container/on-container token pairs to cycle icon
- * badges through. Pulled from the live [MaterialTheme.colorScheme] (so it
- * follows dynamic color) rather than hardcoded hues.
- */
+/** Vertical run of touching tiles. */
+@Composable
+internal fun TileColumn(
+    count: Int,
+    modifier: Modifier = Modifier,
+    tile: @Composable (index: Int, position: GroupPosition) -> Unit,
+) {
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(TileGap)) {
+        repeat(count) { tile(it, groupPosition(it, count)) }
+    }
+}
+
+/** Horizontal run of touching tiles (use Modifier.weight(1f) inside). */
+@Composable
+internal fun TileRow(
+    count: Int,
+    modifier: Modifier = Modifier,
+    tile: @Composable RowScope.(index: Int, position: GroupPosition) -> Unit,
+) {
+    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(TileGap)) {
+        repeat(count) { this@Row.tile(it, groupPosition(it, count)) }
+    }
+}
+
+/** Label + related content, with the label tucked close to its group. */
+@Composable
+internal fun Section(
+    label: String?,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (label != null) GroupLabel(label)
+        content()
+    }
+}
+
+/** The single card primitive used by every screen. */
+@Composable
+internal fun AppCard(
+    modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    contentPadding: Dp = 20.dp,
+    shape: Shape = AppCardShape,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Surface(
+        shape = shape,
+        color = containerColor,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(contentPadding), content = content)
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Buttons, badges, rows
+// ─────────────────────────────────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+internal fun CircleIconButton(
+    onClick: () -> Unit,
+    icon: ImageVector,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    loading: Boolean = false,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+) {
+    Surface(
+        onClick = onClick,
+        enabled = enabled && !loading,
+        shape = CircleShape,
+        color = containerColor,
+        contentColor = contentColor,
+        modifier = modifier
+            .size(42.dp)
+            .semantics {
+                contentDescription?.let { this.contentDescription = it }
+            },
+    ) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            if (loading) {
+                LoadingIndicator(modifier = Modifier.size(28.dp), color = contentColor)
+            } else {
+                Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(20.dp))
+            }
+        }
+    }
+}
+
 @Composable
 internal fun expressiveBadgePalette(): List<Pair<Color, Color>> {
     val scheme = MaterialTheme.colorScheme
@@ -69,7 +179,6 @@ internal fun expressiveBadgePalette(): List<Pair<Color, Color>> {
     )
 }
 
-/** Rounded-square flat-color badge that leads a [GroupedRow], e.g. holding a small icon or initials. */
 @Composable
 internal fun IconBadge(
     containerColor: Color,
@@ -77,17 +186,15 @@ internal fun IconBadge(
     content: @Composable () -> Unit,
 ) {
     Surface(
-        shape = RoundedCornerShape(14.dp),
+        shape = CircleShape,
         color = containerColor,
-        modifier = modifier.size(40.dp),
+        modifier = modifier.size(44.dp),
     ) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            content()
-        }
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { content() }
     }
 }
 
-/** One row inside a [GroupedList]: badge, title/subtitle, and an optional trailing slot. */
+/** One tile row: badge, title/subtitle, optional trailing. Shape follows [position]. */
 @Composable
 internal fun GroupedRow(
     position: GroupPosition,
@@ -99,21 +206,7 @@ internal fun GroupedRow(
     rowContentDescription: String? = null,
     trailing: (@Composable () -> Unit)? = null,
 ) {
-    val clickableModifier = if (onClick != null) {
-        Modifier
-            .clickable(onClick = onClick)
-            .semantics { contentDescription = rowContentDescription ?: title }
-    } else {
-        Modifier
-    }
-
-    Surface(
-        shape = groupShape(position),
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(clickableModifier),
-    ) {
+    val rowContent: @Composable () -> Unit = {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -121,18 +214,18 @@ internal fun GroupedRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconBadge(containerColor = badgeColor) { badgeContent() }
-            Spacer(Modifier.width(14.dp))
+            Spacer(Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 if (subtitle != null) {
                     Text(
                         text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -143,27 +236,42 @@ internal fun GroupedRow(
             }
         }
     }
+
+    val shape = groupShape(position)
+    val color = MaterialTheme.colorScheme.surfaceContainerHigh
+
+    if (onClick != null) {
+        Surface(
+            onClick = onClick,
+            shape = shape,
+            color = color,
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = rowContentDescription ?: title },
+            content = rowContent,
+        )
+    } else {
+        Surface(shape = shape, color = color, modifier = Modifier.fillMaxWidth(), content = rowContent)
+    }
 }
 
-/** Vertical run of [GroupedRow]s, 2dp apart, that together form one rounded settings group. */
 @Composable
 internal fun GroupedList(
     rows: List<@Composable () -> Unit>,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(TileGap)) {
         rows.forEach { row -> row() }
     }
 }
 
-/** Small section label ("ACCOUNT", "SYNC"...) sitting above a [GroupedList], as in the reference apps. */
 @Composable
 internal fun GroupLabel(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text.uppercase(),
-        style = MaterialTheme.typography.labelMedium,
+        style = MaterialTheme.typography.labelLarge,
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.primary,
-        modifier = modifier.padding(start = 8.dp, bottom = 2.dp),
+        modifier = modifier.padding(start = 8.dp),
     )
 }

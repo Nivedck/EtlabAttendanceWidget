@@ -7,6 +7,7 @@ import androidx.compose.material3.MaterialShapes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.Preferences
@@ -18,6 +19,8 @@ import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.PreviewSizeMode
+import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
@@ -46,6 +49,18 @@ class TotalPercentageWidget : GlanceAppWidget() {
 
     override val stateDefinition: GlanceStateDefinition<Preferences> = PreferencesGlanceStateDefinition
 
+    /**
+     * Renders the preview at both common widget sizes so the picker shows
+     * the correct layout regardless of which cell size the user picks.
+     */
+    override val previewSizeMode: PreviewSizeMode
+        get() = SizeMode.Responsive(
+            setOf(
+                DpSize(140.dp, 140.dp), // 2×2
+                DpSize(220.dp, 140.dp), // 4×2
+            )
+        )
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val appContext = context.applicationContext
 
@@ -63,24 +78,34 @@ class TotalPercentageWidget : GlanceAppWidget() {
         }
     }
 
+    /**
+     * Android 15+ path. Single composition, no recomposition.
+     */
+    override suspend fun providePreview(context: Context, widgetCategory: Int) {
+        val appContext = context.applicationContext
+
+        provideContent {
+            val prefs = AttendancePrefs(appContext)
+            val hasCredentials = prefs.hasCredentials()
+            val result = if (hasCredentials) prefs.getLastResult() else null
+
+            GlanceTheme {
+                WidgetContent(hasCredentials, result)
+            }
+        }
+    }
+
     @OptIn(ExperimentalMaterial3ExpressiveApi::class)
     @Composable
-    private fun WidgetContent(
+    internal fun WidgetContent(
         hasCredentials: Boolean,
         result: AttendanceResult?
     ) {
         val context = LocalContext.current
         val clickAction = actionStartActivity(Intent(context, MainActivity::class.java))
 
-        // Google Sans Flex, instanced at a high value on its ROND
-        // (roundness) axis — the actual typeface family M3 Expressive's
-        // "Rounded" style is built from. See google_sans_flex_rounded.xml.
         val roundedFont = FontFamily("google_sans_flex_rounded")
 
-        // Rasterize the real Material 3 Expressive clamshell polygon
-        // instead of an approximated vector drawable. Baked at a fixed,
-        // density-scaled resolution so it stays crisp once RemoteViews
-        // stretches it to the widget's actual cell size.
         val density = context.resources.displayMetrics.density
         val rasterSizePx = (220 * density).toInt()
         val surfaceColorArgb = GlanceTheme.colors.surface.getColor(context).toArgb()
@@ -98,8 +123,6 @@ class TotalPercentageWidget : GlanceAppWidget() {
             modifier = GlanceModifier
                 .fillMaxSize()
                 .background(imageProvider = ImageProvider(clamShellBitmap))
-                // Slightly increased padding so text clears the clamshell's
-                // angled/curved edges.
                 .padding(24.dp)
                 .clickable(clickAction),
             contentAlignment = Alignment.Center

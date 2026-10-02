@@ -21,6 +21,14 @@ interface UpdateApi {
     @GET
     suspend fun fetchLatestRelease(@Url url: String): GitHubRelease
 
+    /** Caller appends "/contributors?per_page=100" to the pointer's releases_url. */
+    @GET
+    suspend fun fetchContributors(@Url url: String): List<GitHubContributor>
+
+    /** Full profile (gives us the real display name). Use contributor.apiUrl. */
+    @GET
+    suspend fun fetchUser(@Url url: String): GitHubUser
+
     companion object {
         private const val POINTER_URL =
             "https://raw.githubusercontent.com/shreyasskdev/tiledeck-widgets/main/update.json"
