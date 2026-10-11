@@ -42,6 +42,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.shreyasskdev.tiledeck.data.AttendanceResult
 import io.github.shreyasskdev.tiledeck.data.SubjectAttendance
+import io.github.shreyasskdev.tiledeck.ui.theme.AnimatedFlexText
+import io.github.shreyasskdev.tiledeck.ui.theme.FlexText
+import io.github.shreyasskdev.tiledeck.ui.theme.PulsingFlexText
 
 private const val SAFE_THRESHOLD = 75.0
 private const val COMFY_THRESHOLD = 85.0
@@ -154,16 +157,23 @@ private fun HeroAttendanceCard(
                     strokeWidth = 10.dp,
                 )
                 Row(verticalAlignment = Alignment.Bottom) {
-                    Text(
+                    FlexText(
                         text = if (result == null) "--" else "%.1f".format(overall),
+                        weight = 850,
+                        rond = 100f,
+                        grad = 80f,
+                        wdth = 120f,
+                        opsz = 48f,
                         style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.Bold,
                         color = contentFg,
                     )
-                    Text(
+                    FlexText(
                         text = "%",
+                        weight = 850,
+                        rond = 100f,
+                        grad = 50f,
+                        wdth = 115f,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
                         color = contentFg,
                         modifier = Modifier.padding(bottom = 4.dp, start = 1.dp),
                     )
@@ -172,23 +182,29 @@ private fun HeroAttendanceCard(
 
             Column(modifier = Modifier.weight(1f)) {
                 Surface(shape = CircleShape, color = contentFg.copy(alpha = 0.18f)) {
-                    Text(
+                    FlexText(
                         text = when {
                             result == null -> "NOT SET UP"
                             isGood -> "ON TRACK"
                             else -> "LOW ATTENDANCE"
                         },
+                        weight = 800,
+                        rond = 100f,
+                        grad = 50f,
+                        wdth = 110f,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
                         color = contentFg,
                     )
                 }
                 Spacer(Modifier.height(10.dp))
-                Text(
+                FlexText(
                     text = "Overall Attendance",
+                    weight = 750,
+                    rond = 100f,
+                    grad = 30f,
+                    wdth = 108f,
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
                     color = contentFg,
                 )
                 Spacer(Modifier.height(2.dp))
@@ -202,19 +218,12 @@ private fun HeroAttendanceCard(
 
         Spacer(Modifier.height(20.dp))
 
-        // Always enabled so the button never takes Material's disabled palette
-        // (which overrides our custom colors with onSurface @ 12%/38% and makes
-        // the whole button vanish against the solid primary card). The click
-        // is guarded instead — taps while loading are simply ignored.
         Button(
             onClick = { if (!loading) onRefresh() },
             shape = CircleShape,
             colors = ButtonDefaults.buttonColors(
                 containerColor = contentFg,
                 contentColor = containerBg,
-                // Redundant safety net — if some ancestor ever sets enabled=false,
-                // keep the visual identical to the enabled state rather than
-                // snapping to the default disabled palette.
                 disabledContainerColor = contentFg,
                 disabledContentColor = containerBg,
             ),
@@ -223,20 +232,20 @@ private fun HeroAttendanceCard(
                 .height(52.dp),
         ) {
             if (loading) {
-                // Material 3 Expressive morphing-shape loading indicator.
-                // Cycles through a sequence of RoundedPolygon shapes while
-                // visible. Recommended over CircularProgressIndicator for
-                // indeterminate waits under ~5 seconds.
                 LoadingIndicator(
                     modifier = Modifier.size(20.dp),
                     color = containerBg,
                 )
                 Spacer(Modifier.size(10.dp))
             }
-            Text(
+            FlexText(
                 text = if (loading) "Refreshing…" else "Refresh attendance",
+                weight = 750,
+                rond = 100f,
+                grad = 30f,
+                wdth = 108f,
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
+                color = containerBg,
             )
         }
     }
@@ -319,15 +328,23 @@ private fun StatCard(
                 .padding(start = extraStartPadding, end = extraEndPadding),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(
+            FlexText(
                 text = value,
+                weight = 850,
+                rond = 100f,
+                grad = 60f,
+                wdth = 118f,
+                opsz = 32f,
                 style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
                 color = content,
                 textAlign = TextAlign.Center,
             )
-            Text(
+            FlexText(
                 text = label,
+                weight = 750,
+                rond = 100f,
+                grad = 30f,
+                wdth = 108f,
                 style = MaterialTheme.typography.labelLarge,
                 color = content.copy(alpha = 0.85f),
                 textAlign = TextAlign.Center,
@@ -361,10 +378,13 @@ private fun SubjectCard(subject: SubjectAttendance, displayLabel: String, shape:
             verticalAlignment = Alignment.Top,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(
+                FlexText(
                     text = displayLabel,
+                    weight = 750,
+                    rond = 100f,
+                    grad = 30f,
+                    wdth = 108f,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
                 )
                 Text(
                     text = subject.code,
@@ -374,11 +394,14 @@ private fun SubjectCard(subject: SubjectAttendance, displayLabel: String, shape:
             }
             Spacer(Modifier.size(12.dp))
             Surface(shape = CircleShape, color = chipBg) {
-                Text(
+                FlexText(
                     text = "%.0f%%".format(subject.percent),
+                    weight = 800,
+                    rond = 100f,
+                    grad = 50f,
+                    wdth = 112f,
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
                     color = chipFg,
                 )
             }

@@ -75,6 +75,7 @@ import io.github.shreyasskdev.tiledeck.data.EtlabRepository
 import io.github.shreyasskdev.tiledeck.data.InvalidCredentialsException
 import io.github.shreyasskdev.tiledeck.data.UpdateChecker
 import io.github.shreyasskdev.tiledeck.data.UpdateStatus
+import io.github.shreyasskdev.tiledeck.ui.theme.AnimatedFlexText
 import io.github.shreyasskdev.tiledeck.ui.theme.AttendanceTheme
 import io.github.shreyasskdev.tiledeck.widget.ATTENDANCE_WIDGET_UPDATE_KEY
 import io.github.shreyasskdev.tiledeck.widget.AttendanceWidget
@@ -88,6 +89,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+import io.github.shreyasskdev.tiledeck.ui.theme.FlexText
 
 private const val UI_PREFS = "attendance_ui_prefs"
 private const val KEY_USE_SHORTHAND = "use_shorthand"
@@ -485,24 +488,30 @@ fun AttendanceExpressiveApp() {
                     LargeTopAppBar(
                         title = {
                             Column {
-                                Text(
+                                FlexText(
                                     text = when (selectedTab) {
                                         0 -> "Attendance overview"
                                         1 -> "Custom display names"
                                         else -> "App settings"
                                     },
+                                    weight = 850,
+                                    rond = 100f,
+                                    grad = 60f,
+                                    wdth = 115f,
+                                    opsz = 32f,
                                     style = MaterialTheme.typography.headlineMedium,
-                                    fontWeight = FontWeight.Bold,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
                                 Spacer(Modifier.height(2.dp))
-                                Text(
+                                io.github.shreyasskdev.tiledeck.ui.theme.FlexText(
                                     text = when (selectedTab) {
                                         0 -> result?.let { "Overall: %.1f%% • Tap refresh to update".format(it.overallPercent) } ?: "LBSCEK Etlab Portal"
                                         1 -> "Personalize subject labels & shorthands"
                                         else -> "Account, updates & auto-refresh"
                                     },
+                                    weight = 500,
+                                    rond = 100f,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1,

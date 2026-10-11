@@ -37,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import io.github.shreyasskdev.tiledeck.data.AttendanceResult
+import io.github.shreyasskdev.tiledeck.ui.theme.FlexText
 
 @Composable
 internal fun CustomizationTab(
@@ -123,14 +124,34 @@ internal fun CustomizationTab(
                         .fillMaxWidth()
                         .height(56.dp),
                 ) {
-                    Text(
+                    FlexText(
                         text = when (saveState) {
                             SaveState.Saving -> "Saving…"
                             SaveState.Saved -> "Saved ✓"
                             SaveState.Idle -> "Save name overrides"
                         },
+                        weight = when (saveState) {
+                            SaveState.Saving -> 550
+                            SaveState.Saved -> 950
+                            SaveState.Idle -> 750
+                        },
+                        rond = 100f,
+                        grad = when (saveState) {
+                            SaveState.Saving -> 0f
+                            SaveState.Saved -> 100f
+                            SaveState.Idle -> 40f
+                        },
+                        wdth = when (saveState) {
+                            SaveState.Saving -> 90f
+                            SaveState.Saved -> 130f
+                            SaveState.Idle -> 110f
+                        },
+                        slnt = when (saveState) {
+                            SaveState.Saving -> -6f
+                            SaveState.Saved -> 0f
+                            SaveState.Idle -> 0f
+                        },
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
                     )
                 }
             }
@@ -204,10 +225,12 @@ private fun SubjectOverrideCard(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         AutoFixIcon(tint = MaterialTheme.colorScheme.onSecondaryContainer)
-                        Text(
+                        FlexText(
                             text = shorthand,
+                            weight = 800,
+                            rond = 100f,
+                            grad = 40f,
                             style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
                         )
                     }

@@ -3,6 +3,15 @@ package io.github.shreyasskdev.tiledeck.ui
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -33,6 +42,7 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -47,6 +57,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -56,19 +67,37 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.ExperimentalTextApi
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import io.github.shreyasskdev.tiledeck.R
 import io.github.shreyasskdev.tiledeck.data.Developer
 import io.github.shreyasskdev.tiledeck.data.DevelopersRepository
+import kotlinx.coroutines.launch
+import kotlin.math.cos
+import kotlin.math.exp
+import kotlin.math.roundToInt
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 private sealed interface DevState {
     data object Loading : DevState
@@ -103,16 +132,22 @@ fun AboutScreen(onBack: () -> Unit) {
             LargeTopAppBar(
                 title = {
                     Column {
-                        Text(
+                        StaticFlexText(
                             text = "About & privacy",
+                            weight = 850,
+                            grad = 50f,
+                            wdth = 115f,
+                            opsz = 32f,
                             style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
                         Spacer(Modifier.height(2.dp))
-                        Text(
+                        StaticFlexText(
                             text = "Tiledeck Widgets",
+                            weight = 500,
+                            grad = 20f,
+                            wdth = 105f,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
@@ -212,6 +247,17 @@ fun AboutScreen(onBack: () -> Unit) {
 private fun AboutHero() {
     val context = LocalContext.current
     val versionName = remember { appVersionName(context) }
+    val reduced = rememberReducedMotion()
+    val scope = rememberCoroutineScope()
+
+    // The icon shape only rotates: a slow endless spin, plus an extra spin kick on tap.
+    val spin by rememberInfiniteTransition(label = "logoSpin").animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(24000, easing = LinearEasing), RepeatMode.Restart),
+        label = "logoSpinAngle",
+    )
+    val kick = remember { Animatable(0f) }
 
     Column(
         modifier = Modifier
@@ -220,27 +266,63 @@ private fun AboutHero() {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
-            modifier = Modifier
-                .size(120.dp)
-                .clip(MaterialShapes.Cookie9Sided.toShape())
-                .background(MaterialTheme.colorScheme.primaryContainer),
+            modifier = Modifier.size(120.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                text = "TD",
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            // Rotating shape (the text is NOT inside this layer, so it stays upright).
+            Surface(
+                onClick = {
+                    if (!reduced) {
+                        scope.launch {
+                            kick.animateTo(
+                                kick.value + 360f,
+                                spring<Float>(dampingRatio = 0.8f, stiffness = 15f),
+                            )
+                        }
+                    }
+                },
+                shape = MaterialShapes.Cookie9Sided.toShape(),
+                color = MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { rotationZ = if (reduced) 0f else spin + kick.value },
+            ) {}
+
+            // The real app icon: the launcher's monochrome layer (the one Android uses for
+            // themed icons), tinted with the system / dynamic color.
+            Icon(
+                painter = painterResource(R.mipmap.ic_launcher_monochrome),
+                contentDescription = "Tiledeck logo",
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.size(112.dp),
             )
         }
 
         Spacer(Modifier.height(20.dp))
 
-        Text(
+        // App name: the ONLY animated text. Plays once. Every letter animates its own
+        // weight, width, roundness, grade, slant and optical size, starting a little after
+        // the letter before it, so the motion travels left to right like a wave.
+        AnimatedFlexText(
             text = "Tiledeck Widgets",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
+            targetWeight = 900,
+            initialWeight = 100,
+            targetRond = 100f,
+            initialRond = 0f,
+            targetGrad = 100f,
+            initialGrad = -100f,
+            targetWdth = 112f,
+            initialWdth = 45f,
+            targetSlnt = 0f,
+            initialSlnt = -10f,
+            targetOpsz = 40f,
+            initialOpsz = 8f,
+            style = MaterialTheme.typography.headlineMedium.copy(fontSize = 26.sp),
             textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+            startDelayMs = 500,
+            letterGapMs = 110,
+            timeScale = 1.8f,
         )
 
         Spacer(Modifier.height(10.dp))
@@ -249,19 +331,23 @@ private fun AboutHero() {
             shape = CircleShape,
             color = MaterialTheme.colorScheme.tertiaryContainer,
         ) {
-            Text(
+            StaticFlexText(
                 text = "Version $versionName",
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                weight = 750,
+                grad = 40f,
+                wdth = 110f,
                 style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onTertiaryContainer,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
             )
         }
 
         Spacer(Modifier.height(12.dp))
 
-        Text(
+        StaticFlexText(
             text = "Your widgets, always one glance away.",
+            weight = 550,
+            wdth = 105f,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -298,24 +384,38 @@ private fun DevelopersCard(state: DevState, onClick: () -> Unit) {
             }
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(
+                StaticFlexText(
                     text = "Developers",
+                    weight = 850,
+                    grad = 50f,
+                    wdth = 110f,
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
                     color = onContainer,
                 )
-                Text(
-                    text = when (state) {
-                        DevState.Loading -> "Loading from GitHub…"
-                        DevState.Failed -> "Couldn't load — tap to retry"
-                        is DevState.Ready -> {
-                            val n = state.developers.size
-                            if (n == 1) "1 person built this" else "$n people built this"
-                        }
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = onContainer.copy(alpha = 0.8f),
-                )
+                when (state) {
+                    DevState.Loading -> Text(
+                        text = "Loading from GitHub…",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = onContainer.copy(alpha = 0.8f),
+                    )
+                    DevState.Failed -> Text(
+                        text = "Couldn't load — tap to retry",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = onContainer.copy(alpha = 0.8f),
+                    )
+                    is DevState.Ready -> {
+                        val n = state.developers.size
+                        val label = if (n == 1) "1 person built this" else "$n people built this"
+                        StaticFlexText(
+                            text = label,
+                            weight = 650,
+                            grad = 40f,
+                            wdth = 108f,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = onContainer.copy(alpha = 0.8f),
+                        )
+                    }
+                }
             }
 
             if (state is DevState.Ready) {
@@ -378,13 +478,17 @@ private fun DevelopersSheet(developers: List<Developer>, onDismiss: () -> Unit) 
     ) {
         Column(modifier = Modifier.navigationBarsPadding()) {
             Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp)) {
-                Text(
+                StaticFlexText(
                     text = "Developers",
+                    weight = 850,
+                    grad = 60f,
+                    wdth = 115f,
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
                 )
-                Text(
+                StaticFlexText(
                     text = "Tap a profile to open it on GitHub",
+                    weight = 450,
+                    grad = 10f,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -422,10 +526,12 @@ private fun DeveloperRow(dev: Developer, position: GroupPosition, onClick: () ->
             DeveloperAvatar(dev = dev, size = 56.dp)
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(
+                StaticFlexText(
                     text = dev.name,
+                    weight = 750,
+                    grad = 40f,
+                    wdth = 108f,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -517,3 +623,254 @@ private fun appVersionName(context: Context): String = runCatching {
         context.packageManager.getPackageInfo(context.packageName, 0).versionName
     }
 }.getOrNull() ?: "1.0.0"
+
+// ═════════════════════════════════════════════════════════════════════════════
+//  Variable-font text animation (private to this file)
+//
+//  Google Sans Flex has six axes. Each one gets its own animation:
+//    wght weight · wdth width · ROND roundness · GRAD grade · slnt slant · opsz optical size
+//
+//  AnimatedFlexText  plays ONCE: every axis has its own spring/tween, start delay and
+//                    letter-by-letter stagger (words for long text)
+//  StaticFlexText    fixed axis values, no animation (cheap)
+//
+//  Needs app/src/main/res/font/google_sans_flex.ttf (the variable TTF).
+// ═════════════════════════════════════════════════════════════════════════════
+
+private data class AxisKey(
+    val w: Int, val wd: Int, val ro: Int, val g: Int, val s: Int, val o: Int,
+)
+
+private fun axisKey(
+    w: Float, wd: Float, ro: Float, g: Float, s: Float, o: Float,
+    fine: Boolean = false,
+): AxisKey {
+    // Animated text snaps to small steps so the typeface cache gets hits.
+    fun q(v: Float, step: Int): Int =
+        if (fine) v.roundToInt() else (v / step).roundToInt() * step
+    return AxisKey(
+        w = q(w, 10).coerceIn(1, 1000),
+        wd = q(wd, 2).coerceAtLeast(1),
+        ro = q(ro, 5).coerceIn(0, 100),
+        g = q(g, 5),
+        s = q(s, 1),
+        o = q(o, 2).coerceAtLeast(1),
+    )
+}
+
+private val familyCache = HashMap<AxisKey, FontFamily>()
+
+@OptIn(ExperimentalTextApi::class)
+private fun familyFor(k: AxisKey): FontFamily {
+    if (familyCache.size > 800) familyCache.clear()
+    return familyCache.getOrPut(k) {
+        FontFamily(
+            Font(
+                resId = R.font.google_sans_flex,
+                weight = FontWeight(k.w),
+                variationSettings = FontVariation.Settings(
+                    FontVariation.weight(k.w),
+                    FontVariation.width(k.wd.toFloat()),
+                    FontVariation.opticalSizing(k.o.sp),
+                    FontVariation.slant(k.s.toFloat().coerceIn(-90f, 90f)),
+                    FontVariation.grade(k.g),
+                    FontVariation.Setting("ROND", k.ro.toFloat()),
+                ),
+            )
+        )
+    }
+}
+
+private fun autoOpsz(style: TextStyle): Float =
+    if (style.fontSize.isSp) style.fontSize.value else 16f
+
+private fun mix(a: Float, b: Float, t: Float) = a + (b - a) * t
+
+/** Short text staggers per letter, long text per word. */
+private fun unitMap(text: String): Pair<IntArray, Int> {
+    if (text.length <= 18) return IntArray(text.length) { it } to text.length.coerceAtLeast(1)
+    var u = 0
+    val arr = IntArray(text.length)
+    text.forEachIndexed { i, c ->
+        arr[i] = u
+        if (c == ' ') u++
+    }
+    return arr to (u + 1)
+}
+
+/** Static text with explicit axis values (no animation). */
+@Composable
+private fun StaticFlexText(
+    text: String,
+    modifier: Modifier = Modifier,
+    style: TextStyle = LocalTextStyle.current,
+    color: Color = Color.Unspecified,
+    weight: Int = 400,
+    rond: Float = 100f,
+    grad: Float = 0f,
+    wdth: Float = 100f,
+    slnt: Float = 0f,
+    opsz: Float = Float.NaN,
+    maxLines: Int = Int.MAX_VALUE,
+    overflow: TextOverflow = TextOverflow.Clip,
+    textAlign: TextAlign = TextAlign.Unspecified,
+) {
+    val key = axisKey(
+        weight.toFloat(), wdth, rond, grad, slnt,
+        if (opsz.isNaN()) autoOpsz(style) else opsz,
+        fine = true,
+    )
+    Text(
+        text = text,
+        modifier = modifier,
+        color = color,
+        style = style.copy(fontFamily = familyFor(key), fontWeight = FontWeight(key.w)),
+        maxLines = maxLines,
+        overflow = overflow,
+        textAlign = textAlign,
+    )
+}
+
+private const val IDX_WGHT = 0
+private const val IDX_WDTH = 1
+private const val IDX_ROND = 2
+private const val IDX_GRAD = 3
+private const val IDX_SLNT = 4
+private const val IDX_OPSZ = 5
+
+/**
+ * One axis' motion curve. Either a damped spring ([zeta] > 0, can overshoot) or an
+ * eased tween. [letterFactor] makes each axis ripple across the letters at its own pace.
+ */
+private class AxisSpec(
+    val zeta: Float,
+    val stiffness: Float,
+    val tweenMs: Float,
+    val baseDelayMs: Int,
+    val letterFactor: Float,
+) {
+    /** Progress at [tMs] after this axis/letter starts: 0 before, ~1 after. */
+    fun at(tMs: Float): Float {
+        if (tMs <= 0f) return 0f
+        return if (zeta > 0f) {
+            val t = tMs / 1000f
+            val w = sqrt(stiffness)
+            val wd = w * sqrt(1f - zeta * zeta)
+            val e = exp(-zeta * w * t)
+            1f - e * (cos(wd * t) + (zeta * w / wd) * sin(wd * t))
+        } else {
+            FastOutSlowInEasing.transform((tMs / tweenMs).coerceIn(0f, 1f))
+        }
+    }
+
+    fun settleMs(): Float =
+        if (zeta > 0f) 4500f / (zeta * sqrt(stiffness)) else tweenMs
+}
+
+/**
+ * Plays once. EVERY LETTER gets its own delayed animation on EVERY axis: one shared
+ * clock drives all of them, and each letter starts [letterGapMs] after the previous
+ * one, with each axis rippling at its own speed (weight, width, roundness, grade,
+ * slant, optical size). Replays only if [text] or [triggerKey] changes.
+ *
+ *  timeScale     3f = everything plays 3x slower
+ *  axisGapMs     > 0: axes start one after another, this many ms apart
+ *  startDelayMs  pause before anything starts
+ *  letterGapMs   delay between one letter and the next (words for long text)
+ */
+@Composable
+private fun AnimatedFlexText(
+    text: String,
+    modifier: Modifier = Modifier,
+    style: TextStyle = LocalTextStyle.current,
+    color: Color = Color.Unspecified,
+    targetWeight: Int = 500,
+    initialWeight: Int = 100,
+    targetRond: Float = 100f,
+    initialRond: Float = 0f,
+    targetGrad: Float = 0f,
+    initialGrad: Float = -50f,
+    targetWdth: Float = 100f,
+    initialWdth: Float = 80f,
+    targetSlnt: Float = 0f,
+    initialSlnt: Float = -8f,
+    targetOpsz: Float = Float.NaN,
+    initialOpsz: Float = Float.NaN,
+    maxLines: Int = Int.MAX_VALUE,
+    overflow: TextOverflow = TextOverflow.Clip,
+    textAlign: TextAlign = TextAlign.Unspecified,
+    triggerKey: Any? = null,
+    timeScale: Float = 1f,
+    axisGapMs: Int = 0,
+    startDelayMs: Int = 0,
+    letterGapMs: Int = 60,
+) {
+    val reduced = rememberReducedMotion()
+    val ts = timeScale.coerceAtLeast(0.1f)
+    val specs = remember(ts) {
+        listOf(
+            AxisSpec(0.42f, 70f / (ts * ts), 0f, 0, 1.0f),     // weight: bouncy
+            AxisSpec(0.60f, 55f / (ts * ts), 0f, 90, 0.8f),    // width: softer
+            AxisSpec(0.75f, 35f / (ts * ts), 0f, 180, 1.3f),   // roundness: silky
+            AxisSpec(0f, 0f, 900f * ts, 120, 0.6f),            // grade: eased
+            AxisSpec(0.30f, 110f / (ts * ts), 0f, 240, 1.6f),  // slant: wobbly
+            AxisSpec(0f, 0f, 1100f * ts, 60, 0.5f),            // optical size: long ease
+        )
+    }
+    val (unitOf, units) = remember(text) { unitMap(text) }
+
+    fun axisDelay(i: Int): Float =
+        (startDelayMs + if (axisGapMs > 0) i * axisGapMs else (specs[i].baseDelayMs * ts).toInt()).toFloat()
+
+    val totalMs = remember(specs, units, startDelayMs, axisGapMs, letterGapMs) {
+        specs.indices.maxOf { i ->
+            axisDelay(i) + (units - 1) * letterGapMs * specs[i].letterFactor + specs[i].settleMs()
+        } + 100f
+    }
+
+    val clock = remember { Animatable(0f) }
+    LaunchedEffect(text, triggerKey, reduced, totalMs) {
+        if (reduced) {
+            clock.snapTo(totalMs)
+            return@LaunchedEffect
+        }
+        clock.snapTo(0f)
+        clock.animateTo(totalMs, tween(totalMs.toInt(), easing = LinearEasing))
+    }
+    val now = clock.value
+
+    val tOpsz = if (targetOpsz.isNaN()) autoOpsz(style) else targetOpsz
+    val iOpsz = if (initialOpsz.isNaN()) (tOpsz * 0.4f).coerceAtLeast(6f) else initialOpsz
+
+    /** Progress of axis [i] for the letter at text-unit [u]. */
+    fun p(i: Int, u: Int): Float =
+        if (reduced) 1f
+        else specs[i].at(now - axisDelay(i) - u * letterGapMs * specs[i].letterFactor)
+
+    val annotated = buildAnnotatedString {
+        text.forEachIndexed { index, ch ->
+            val u = unitOf[index]
+            val k = axisKey(
+                w = mix(initialWeight.toFloat(), targetWeight.toFloat(), p(IDX_WGHT, u)),
+                wd = mix(initialWdth, targetWdth, p(IDX_WDTH, u)),
+                ro = mix(initialRond, targetRond, p(IDX_ROND, u)),
+                g = mix(initialGrad, targetGrad, p(IDX_GRAD, u)),
+                s = mix(initialSlnt, targetSlnt, p(IDX_SLNT, u)),
+                o = mix(iOpsz, tOpsz, p(IDX_OPSZ, u)),
+            )
+            withStyle(SpanStyle(fontFamily = familyFor(k), fontWeight = FontWeight(k.w))) {
+                append(ch)
+            }
+        }
+    }
+
+    Text(
+        text = annotated,
+        modifier = modifier,
+        color = color,
+        style = style,
+        maxLines = maxLines,
+        overflow = overflow,
+        textAlign = textAlign,
+    )
+}

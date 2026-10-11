@@ -28,9 +28,9 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import io.github.shreyasskdev.tiledeck.ui.theme.FlexText
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Tile system (Android 16/17 Settings style)
@@ -216,10 +216,12 @@ internal fun GroupedRow(
             IconBadge(containerColor = badgeColor) { badgeContent() }
             Spacer(Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(
+                FlexText(
                     text = title,
+                    weight = 700,
+                    rond = 100f,
+                    grad = 20f,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 if (subtitle != null) {
@@ -267,10 +269,12 @@ internal fun GroupedList(
 
 @Composable
 internal fun GroupLabel(text: String, modifier: Modifier = Modifier) {
-    Text(
+    FlexText(
         text = text.uppercase(),
+        weight = 800,
+        rond = 100f,
+        grad = 40f,
         style = MaterialTheme.typography.labelLarge,
-        fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.primary,
         modifier = modifier.padding(start = 8.dp),
     )

@@ -30,7 +30,6 @@ import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -47,6 +46,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import io.github.shreyasskdev.tiledeck.ui.theme.AnimatedFlexText
 
 internal var TOOLBAR_DAMPING_RATIO: Float = Spring.DampingRatioMediumBouncy
 internal var TOOLBAR_STIFFNESS: Float = Spring.StiffnessLow
@@ -236,12 +236,22 @@ private fun ExpressiveToolbarNavItem(
                         modifier = Modifier.width(8.dp),
                     )
 
-                    Text(
+                    AnimatedFlexText(
                         text = label,
+                        targetWeight = 850,
+                        initialWeight = 300,
+                        targetRond = 100f,
+                        initialRond = 0f,
+                        targetGrad = 60f,
+                        initialGrad = -40f,
+                        targetWdth = 120f,
+                        initialWdth = 75f,
+                        targetSlnt = 0f,
+                        initialSlnt = -8f,
                         style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
                         color = contentColor,
                         maxLines = 1,
+                        triggerKey = selected,
                     )
                 }
             }

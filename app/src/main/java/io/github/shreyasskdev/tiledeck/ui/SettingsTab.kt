@@ -68,6 +68,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import io.github.shreyasskdev.tiledeck.BuildConfig
 import io.github.shreyasskdev.tiledeck.data.UpdateStatus
+import io.github.shreyasskdev.tiledeck.ui.theme.AnimatedFlexText
+import io.github.shreyasskdev.tiledeck.ui.theme.FlexText
 
 private val PASSWORD_SHAPES = listOf(
     MaterialShapes.Cookie4Sided,
@@ -222,10 +224,14 @@ private fun CredentialsCard(
                 .fillMaxWidth()
                 .height(56.dp),
         ) {
-            Text(
+            FlexText(
                 text = if (loading) "Checking…" else "Save & fetch attendance",
+                weight = if (loading) 550 else 800,
+                rond = 100f,
+                grad = if (loading) 0f else 60f,
+                wdth = if (loading) 90f else 115f,
+                slnt = if (loading) -6f else 0f,
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
             )
         }
     }
@@ -464,10 +470,14 @@ private fun BackgroundRefreshCard(
                     },
                     colors = groupColors,
                 ) {
-                    Text(
+                    FlexText(
                         text = label,
+                        weight = if (checked) 850 else 400,
+                        rond = if (checked) 100f else 0f,
+                        grad = if (checked) 60f else -30f,
+                        wdth = if (checked) 115f else 85f,
+                        slnt = if (checked) 0f else -4f,
                         style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
                     )
                 }
             }
@@ -536,17 +546,23 @@ private fun VersionCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
+            FlexText(
                 text = "App version",
+                weight = 750,
+                rond = 100f,
+                grad = 30f,
+                wdth = 108f,
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
             )
             Surface(shape = CircleShape, color = chipBg) {
-                Text(
+                FlexText(
                     text = chipText,
+                    weight = 800,
+                    rond = 100f,
+                    grad = 50f,
+                    wdth = 112f,
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                     style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
                     color = chipFg,
                 )
             }
@@ -554,10 +570,14 @@ private fun VersionCard(
 
         Spacer(Modifier.height(12.dp))
 
-        Text(
+        FlexText(
             text = "v$currentVersion",
+            weight = 850,
+            rond = 100f,
+            grad = 60f,
+            wdth = 120f,
+            opsz = 32f,
             style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
         )
         Text(
             text = headline,
