@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextOverflow
 import io.github.shreyasskdev.tiledeck.R
 
@@ -333,37 +334,43 @@ fun FlexText(
 
 private val base = Typography()
 
+private fun TextStyle.scaled(factor: Float = 0.88f): TextStyle {
+    val newFontSize = if (fontSize.isSp) (fontSize.value * factor).sp else fontSize
+    val newLineHeight = if (lineHeight.isSp) (lineHeight.value * factor).sp else lineHeight
+    return copy(fontFamily = AppFontFamily, fontSize = newFontSize, lineHeight = newLineHeight)
+}
+
 val AppTypography = Typography(
-    displayLarge = base.displayLarge.copy(fontFamily = AppFontFamily),
-    displayMedium = base.displayMedium.copy(fontFamily = AppFontFamily),
-    displaySmall = base.displaySmall.copy(fontFamily = AppFontFamily),
-    headlineLarge = base.headlineLarge.copy(fontFamily = AppFontFamily),
-    headlineMedium = base.headlineMedium.copy(fontFamily = AppFontFamily),
-    headlineSmall = base.headlineSmall.copy(fontFamily = AppFontFamily),
-    titleLarge = base.titleLarge.copy(fontFamily = AppFontFamily),
-    titleMedium = base.titleMedium.copy(fontFamily = AppFontFamily),
-    titleSmall = base.titleSmall.copy(fontFamily = AppFontFamily),
-    bodyLarge = base.bodyLarge.copy(fontFamily = AppFontFamily),
-    bodyMedium = base.bodyMedium.copy(fontFamily = AppFontFamily),
-    bodySmall = base.bodySmall.copy(fontFamily = AppFontFamily),
-    labelLarge = base.labelLarge.copy(fontFamily = AppFontFamily),
-    labelMedium = base.labelMedium.copy(fontFamily = AppFontFamily),
-    labelSmall = base.labelSmall.copy(fontFamily = AppFontFamily),
+    displayLarge = base.displayLarge.scaled(),
+    displayMedium = base.displayMedium.scaled(),
+    displaySmall = base.displaySmall.scaled(),
+    headlineLarge = base.headlineLarge.scaled(),
+    headlineMedium = base.headlineMedium.scaled(),
+    headlineSmall = base.headlineSmall.scaled(),
+    titleLarge = base.titleLarge.scaled(),
+    titleMedium = base.titleMedium.scaled(),
+    titleSmall = base.titleSmall.scaled(),
+    bodyLarge = base.bodyLarge.scaled(),
+    bodyMedium = base.bodyMedium.scaled(),
+    bodySmall = base.bodySmall.scaled(),
+    labelLarge = base.labelLarge.scaled(),
+    labelMedium = base.labelMedium.scaled(),
+    labelSmall = base.labelSmall.scaled(),
 
     // Expressive emphasized styles.
-    displayLargeEmphasized = base.displayLargeEmphasized.copy(fontFamily = AppFontFamily),
-    displayMediumEmphasized = base.displayMediumEmphasized.copy(fontFamily = AppFontFamily),
-    displaySmallEmphasized = base.displaySmallEmphasized.copy(fontFamily = AppFontFamily),
-    headlineLargeEmphasized = base.headlineLargeEmphasized.copy(fontFamily = AppFontFamily),
-    headlineMediumEmphasized = base.headlineMediumEmphasized.copy(fontFamily = AppFontFamily),
-    headlineSmallEmphasized = base.headlineSmallEmphasized.copy(fontFamily = AppFontFamily),
-    titleLargeEmphasized = base.titleLargeEmphasized.copy(fontFamily = AppFontFamily),
-    titleMediumEmphasized = base.titleMediumEmphasized.copy(fontFamily = AppFontFamily),
-    titleSmallEmphasized = base.titleSmallEmphasized.copy(fontFamily = AppFontFamily),
-    bodyLargeEmphasized = base.bodyLargeEmphasized.copy(fontFamily = AppFontFamily),
-    bodyMediumEmphasized = base.bodyMediumEmphasized.copy(fontFamily = AppFontFamily),
-    bodySmallEmphasized = base.bodySmallEmphasized.copy(fontFamily = AppFontFamily),
-    labelLargeEmphasized = base.labelLargeEmphasized.copy(fontFamily = AppFontFamily),
-    labelMediumEmphasized = base.labelMediumEmphasized.copy(fontFamily = AppFontFamily),
-    labelSmallEmphasized = base.labelSmallEmphasized.copy(fontFamily = AppFontFamily),
+    displayLargeEmphasized = base.displayLargeEmphasized.scaled(),
+    displayMediumEmphasized = base.displayMediumEmphasized.scaled(),
+    displaySmallEmphasized = base.displaySmallEmphasized.scaled(),
+    headlineLargeEmphasized = base.headlineLargeEmphasized.scaled(),
+    headlineMediumEmphasized = base.headlineMediumEmphasized.scaled(),
+    headlineSmallEmphasized = base.headlineSmallEmphasized.scaled(),
+    titleLargeEmphasized = base.titleLargeEmphasized.scaled(),
+    titleMediumEmphasized = base.titleMediumEmphasized.scaled(),
+    titleSmallEmphasized = base.titleSmallEmphasized.scaled(),
+    bodyLargeEmphasized = base.bodyLargeEmphasized.scaled(),
+    bodyMediumEmphasized = base.bodyMediumEmphasized.scaled(),
+    bodySmallEmphasized = base.bodySmallEmphasized.scaled(),
+    labelLargeEmphasized = base.labelLargeEmphasized.scaled(),
+    labelMediumEmphasized = base.labelMediumEmphasized.scaled(),
+    labelSmallEmphasized = base.labelSmallEmphasized.scaled(),
 )

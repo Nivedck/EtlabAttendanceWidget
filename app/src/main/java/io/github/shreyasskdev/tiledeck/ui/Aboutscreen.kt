@@ -1,8 +1,12 @@
 package io.github.shreyasskdev.tiledeck.ui
 
+import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
+import android.graphics.Typeface
 import android.content.pm.PackageManager
 import android.os.Build
+import android.view.View
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -53,6 +57,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -72,6 +77,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.ExperimentalTextApi
@@ -80,6 +86,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontSynthesis
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -92,7 +99,12 @@ import coil.compose.AsyncImage
 import io.github.shreyasskdev.tiledeck.R
 import io.github.shreyasskdev.tiledeck.data.Developer
 import io.github.shreyasskdev.tiledeck.data.DevelopersRepository
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import java.io.File
 import kotlin.math.cos
 import kotlin.math.exp
 import kotlin.math.roundToInt
@@ -129,26 +141,45 @@ fun AboutScreen(onBack: () -> Unit) {
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
+            val collapsedFraction = scrollBehavior.state.collapsedFraction.coerceIn(0f, 1f)
+            val titleWeight = lerp(850, 500, collapsedFraction)
+            val titleFontSize = lerp(24.5f, 18f, collapsedFraction).sp
+            val titleLineHeight = lerp(28.5f, 21f, collapsedFraction).sp
+            val titleWdth = lerp(128f, 110f, collapsedFraction)
+            val titleOpsz = lerp(24.5f, 18f, collapsedFraction)
+
+            val subtitleFontSize = lerp(11f, 10f, collapsedFraction).sp
+            val subtitleLineHeight = lerp(14f, 12f, collapsedFraction).sp
+            val subtitleWeight = lerp(500, 450, collapsedFraction)
+            val subtitleWdth = lerp(115f, 105f, collapsedFraction)
+            val spacerHeight = lerp(1f, 0f, collapsedFraction).dp
+
             LargeTopAppBar(
                 title = {
                     Column {
                         StaticFlexText(
                             text = "About & privacy",
-                            weight = 850,
+                            weight = titleWeight,
                             grad = 50f,
-                            wdth = 115f,
-                            opsz = 32f,
-                            style = MaterialTheme.typography.headlineMedium,
+                            wdth = titleWdth,
+                            opsz = titleOpsz,
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                fontSize = titleFontSize,
+                                lineHeight = titleLineHeight,
+                            ),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
-                        Spacer(Modifier.height(2.dp))
+                        Spacer(Modifier.height(spacerHeight))
                         StaticFlexText(
                             text = "Tiledeck Widgets",
-                            weight = 500,
+                            weight = subtitleWeight,
                             grad = 20f,
-                            wdth = 105f,
-                            style = MaterialTheme.typography.bodySmall,
+                            wdth = subtitleWdth,
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontSize = subtitleFontSize,
+                                lineHeight = subtitleLineHeight,
+                            ),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -317,7 +348,7 @@ private fun AboutHero() {
             initialSlnt = -10f,
             targetOpsz = 40f,
             initialOpsz = 8f,
-            style = MaterialTheme.typography.headlineMedium.copy(fontSize = 26.sp),
+            style = MaterialTheme.typography.headlineMedium.copy(fontSize = 23.sp),
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
             startDelayMs = 500,
@@ -686,6 +717,12 @@ private fun autoOpsz(style: TextStyle): Float =
 
 private fun mix(a: Float, b: Float, t: Float) = a + (b - a) * t
 
+private fun lerp(start: Float, stop: Float, fraction: Float): Float =
+    start + (stop - start) * fraction.coerceIn(0f, 1f)
+
+private fun lerp(start: Int, stop: Int, fraction: Float): Int =
+    (start + (stop - start) * fraction.coerceIn(0f, 1f)).roundToInt()
+
 /** Short text staggers per letter, long text per word. */
 private fun unitMap(text: String): Pair<IntArray, Int> {
     if (text.length <= 18) return IntArray(text.length) { it } to text.length.coerceAtLeast(1)
@@ -767,6 +804,103 @@ private class AxisSpec(
         if (zeta > 0f) 4500f / (zeta * sqrt(stiffness)) else tweenMs
 }
 
+// ───────────────────────── Smooth-animation plumbing ─────────────────────────
+
+/**
+ * Builds the animated typefaces OFF the main thread and keeps them in our own cache.
+ *
+ * Why: Compose's own font cache only holds ~16 typefaces, so every animation frame (16 letters,
+ * each with different axis values) used to create brand-new typefaces on the main thread.
+ * That is what made the animation feel like 60fps while the rest of the UI ran at 120.
+ */
+private object FlexTypefaces {
+    private const val MAX_ENTRIES = 2400
+    private val lock = Any()
+    private var fontFile: File? = null
+
+    private val cache = object : LinkedHashMap<AxisKey, FontFamily>(256, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<AxisKey, FontFamily>?): Boolean =
+            size > MAX_ENTRIES
+    }
+
+    /** Copies the variable TTF out of res/font once, so typefaces can be built from a file. */
+    private fun fontFile(context: Context): File? = synchronized(lock) {
+        fontFile ?: runCatching {
+            val out = File(context.cacheDir, "google_sans_flex_anim.ttf")
+            if (!out.exists() || out.length() == 0L) {
+                val tmp = File(context.cacheDir, "google_sans_flex_anim.ttf.tmp")
+                context.resources.openRawResource(R.font.google_sans_flex).use { input ->
+                    tmp.outputStream().use { input.copyTo(it) }
+                }
+                tmp.renameTo(out)
+            }
+            out
+        }.getOrNull().also { fontFile = it }
+    }
+
+    fun prepare(context: Context) {
+        fontFile(context)
+    }
+
+    fun get(context: Context, k: AxisKey): FontFamily {
+        synchronized(lock) { cache[k] }?.let { return it }
+        val built = build(context, k)          // built outside the lock
+        synchronized(lock) { cache[k] = built }
+        return built
+    }
+
+    private fun build(context: Context, k: AxisKey): FontFamily {
+        val file = fontFile(context) ?: return familyFor(k)
+        val typeface = runCatching {
+            Typeface.Builder(file)
+                .setFontVariationSettings(
+                    "'wght' ${k.w}, 'wdth' ${k.wd}, 'opsz' ${k.o}, " +
+                            "'slnt' ${k.s}, 'GRAD' ${k.g}, 'ROND' ${k.ro}"
+                )
+                .build()
+        }.getOrNull() ?: return familyFor(k)
+        return FontFamily(typeface)
+    }
+}
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
+
+/**
+ * Android's adaptive refresh rate drops idle animations to 60Hz unless the app asks for more.
+ * While [active], ask for the highest refresh rate so the text animation runs at 120Hz.
+ */
+@Composable
+private fun HighFrameRate(active: Boolean) {
+    val view = LocalView.current
+    DisposableEffect(view, active) {
+        if (!active) return@DisposableEffect onDispose { }
+
+        val window = view.context.findActivity()?.window
+        val oldPreferred = window?.attributes?.preferredRefreshRate ?: 0f
+
+        if (Build.VERSION.SDK_INT >= 35) {
+            view.requestedFrameRate = View.REQUESTED_FRAME_RATE_CATEGORY_HIGH
+        }
+        val maxRate = view.display?.supportedModes?.maxOfOrNull { it.refreshRate }
+        if (window != null && maxRate != null) {
+            window.attributes = window.attributes.apply { preferredRefreshRate = maxRate }
+        }
+
+        onDispose {
+            if (Build.VERSION.SDK_INT >= 35) {
+                view.requestedFrameRate = View.REQUESTED_FRAME_RATE_CATEGORY_DEFAULT
+            }
+            if (window != null) {
+                window.attributes = window.attributes.apply { preferredRefreshRate = oldPreferred }
+            }
+        }
+    }
+}
+
 /**
  * Plays once. EVERY LETTER gets its own delayed animation on EVERY axis: one shared
  * clock drives all of them, and each letter starts [letterGapMs] after the previous
@@ -777,6 +911,9 @@ private class AxisSpec(
  *  axisGapMs     > 0: axes start one after another, this many ms apart
  *  startDelayMs  pause before anything starts
  *  letterGapMs   delay between one letter and the next (words for long text)
+ *
+ * Smoothness: typefaces for the next ~0.9s are built on a background thread while the
+ * animation plays (see [FlexTypefaces]), and the screen is asked to run at its top refresh rate.
  */
 @Composable
 private fun AnimatedFlexText(
@@ -806,6 +943,7 @@ private fun AnimatedFlexText(
     letterGapMs: Int = 60,
 ) {
     val reduced = rememberReducedMotion()
+    val appContext = LocalContext.current.applicationContext
     val ts = timeScale.coerceAtLeast(0.1f)
     val specs = remember(ts) {
         listOf(
@@ -828,6 +966,25 @@ private fun AnimatedFlexText(
         } + 100f
     }
 
+    val tOpsz = if (targetOpsz.isNaN()) autoOpsz(style) else targetOpsz
+    val iOpsz = if (initialOpsz.isNaN()) (tOpsz * 0.4f).coerceAtLeast(6f) else initialOpsz
+
+    /** Axis values of letter [index] at time [tMs] on the animation clock. */
+    fun keyAt(tMs: Float, index: Int): AxisKey {
+        val u = unitOf[index]
+        fun p(i: Int): Float =
+            if (reduced) 1f
+            else specs[i].at(tMs - axisDelay(i) - u * letterGapMs * specs[i].letterFactor)
+        return axisKey(
+            w = mix(initialWeight.toFloat(), targetWeight.toFloat(), p(IDX_WGHT)),
+            wd = mix(initialWdth, targetWdth, p(IDX_WDTH)),
+            ro = mix(initialRond, targetRond, p(IDX_ROND)),
+            g = mix(initialGrad, targetGrad, p(IDX_GRAD)),
+            s = mix(initialSlnt, targetSlnt, p(IDX_SLNT)),
+            o = mix(iOpsz, tOpsz, p(IDX_OPSZ)),
+        )
+    }
+
     val clock = remember { Animatable(0f) }
     LaunchedEffect(text, triggerKey, reduced, totalMs) {
         if (reduced) {
@@ -835,30 +992,41 @@ private fun AnimatedFlexText(
             return@LaunchedEffect
         }
         clock.snapTo(0f)
+
+        // Build typefaces ahead of the clock on a background thread, ~0.9s of animation ahead.
+        val lookAheadMs = 900f
+        val firstWindowReady = CompletableDeferred<Unit>()
+        val prewarm = launch(Dispatchers.Default) {
+            FlexTypefaces.prepare(appContext)
+            var t = 0f
+            while (t <= totalMs) {
+                if (t >= lookAheadMs) firstWindowReady.complete(Unit)
+                while (t > clock.value + lookAheadMs) delay(16)
+                for (index in text.indices) FlexTypefaces.get(appContext, keyAt(t, index))
+                t += 8f
+            }
+            firstWindowReady.complete(Unit)
+        }
+        // Start once the first window is ready (or after 2.5s at most, building keeps going).
+        withTimeoutOrNull(2500) { firstWindowReady.await() }
+
         clock.animateTo(totalMs, tween(totalMs.toInt(), easing = LinearEasing))
+        prewarm.cancel()
     }
     val now = clock.value
 
-    val tOpsz = if (targetOpsz.isNaN()) autoOpsz(style) else targetOpsz
-    val iOpsz = if (initialOpsz.isNaN()) (tOpsz * 0.4f).coerceAtLeast(6f) else initialOpsz
-
-    /** Progress of axis [i] for the letter at text-unit [u]. */
-    fun p(i: Int, u: Int): Float =
-        if (reduced) 1f
-        else specs[i].at(now - axisDelay(i) - u * letterGapMs * specs[i].letterFactor)
+    HighFrameRate(active = !reduced && now < totalMs)
 
     val annotated = buildAnnotatedString {
         text.forEachIndexed { index, ch ->
-            val u = unitOf[index]
-            val k = axisKey(
-                w = mix(initialWeight.toFloat(), targetWeight.toFloat(), p(IDX_WGHT, u)),
-                wd = mix(initialWdth, targetWdth, p(IDX_WDTH, u)),
-                ro = mix(initialRond, targetRond, p(IDX_ROND, u)),
-                g = mix(initialGrad, targetGrad, p(IDX_GRAD, u)),
-                s = mix(initialSlnt, targetSlnt, p(IDX_SLNT, u)),
-                o = mix(iOpsz, tOpsz, p(IDX_OPSZ, u)),
-            )
-            withStyle(SpanStyle(fontFamily = familyFor(k), fontWeight = FontWeight(k.w))) {
+            val family = FlexTypefaces.get(appContext, keyAt(now, index))
+            withStyle(
+                SpanStyle(
+                    fontFamily = family,
+                    fontWeight = FontWeight.Normal,
+                    fontSynthesis = FontSynthesis.None,
+                )
+            ) {
                 append(ch)
             }
         }

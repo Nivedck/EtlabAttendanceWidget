@@ -62,6 +62,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlin.math.roundToInt
 import androidx.core.view.WindowCompat
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.updateAppWidgetState
@@ -485,6 +487,19 @@ fun AttendanceExpressiveApp() {
                     .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection),
                 containerColor = MaterialTheme.colorScheme.surface,
                 topBar = {
+                    val collapsedFraction = topAppBarScrollBehavior.state.collapsedFraction.coerceIn(0f, 1f)
+                    val titleWeight = lerp(850, 500, collapsedFraction)
+                    val titleFontSize = lerp(24.5f, 18f, collapsedFraction).sp
+                    val titleLineHeight = lerp(28.5f, 21f, collapsedFraction).sp
+                    val titleWdth = lerp(128f, 110f, collapsedFraction)
+                    val titleOpsz = lerp(24.5f, 18f, collapsedFraction)
+
+                    val subtitleFontSize = lerp(11f, 10f, collapsedFraction).sp
+                    val subtitleLineHeight = lerp(14f, 12f, collapsedFraction).sp
+                    val subtitleWeight = lerp(500, 450, collapsedFraction)
+                    val subtitleWdth = lerp(115f, 105f, collapsedFraction)
+                    val spacerHeight = lerp(1f, 0f, collapsedFraction).dp
+
                     LargeTopAppBar(
                         title = {
                             Column {
@@ -494,25 +509,32 @@ fun AttendanceExpressiveApp() {
                                         1 -> "Custom display names"
                                         else -> "App settings"
                                     },
-                                    weight = 850,
+                                    weight = titleWeight,
                                     rond = 100f,
                                     grad = 60f,
-                                    wdth = 115f,
-                                    opsz = 32f,
-                                    style = MaterialTheme.typography.headlineMedium,
+                                    wdth = titleWdth,
+                                    opsz = titleOpsz,
+                                    style = MaterialTheme.typography.headlineMedium.copy(
+                                        fontSize = titleFontSize,
+                                        lineHeight = titleLineHeight,
+                                    ),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
-                                Spacer(Modifier.height(2.dp))
+                                Spacer(Modifier.height(spacerHeight))
                                 io.github.shreyasskdev.tiledeck.ui.theme.FlexText(
                                     text = when (selectedTab) {
                                         0 -> result?.let { "Overall: %.1f%% • Tap refresh to update".format(it.overallPercent) } ?: "LBSCEK Etlab Portal"
                                         1 -> "Personalize subject labels & shorthands"
                                         else -> "Account, updates & auto-refresh"
                                     },
-                                    weight = 500,
+                                    weight = subtitleWeight,
                                     rond = 100f,
-                                    style = MaterialTheme.typography.bodySmall,
+                                    wdth = subtitleWdth,
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        fontSize = subtitleFontSize,
+                                        lineHeight = subtitleLineHeight,
+                                    ),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
@@ -672,151 +694,8 @@ fun AttendanceExpressiveApp() {
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Canvas icon helpers
-// ─────────────────────────────────────────────────────────────────────────────
+private fun lerp(start: Float, stop: Float, fraction: Float): Float =
+    start + (stop - start) * fraction.coerceIn(0f, 1f)
 
-@Composable
-private fun PieChartIcon(tint: Color, modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier.size(18.dp)) {
-        drawArc(color = tint, startAngle = 30f, sweepAngle = 290f, useCenter = true)
-        drawArc(color = tint.copy(alpha = 0.5f), startAngle = 330f, sweepAngle = 50f, useCenter = true)
-    }
-}
-
-@Composable
-private fun EditIcon(tint: Color, modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier.size(18.dp)) {
-        drawRoundRect(color = tint, cornerRadius = CornerRadius(4f, 4f), style = Stroke(width = 3f))
-        drawLine(
-            color = tint,
-            start = Offset(size.width * 0.25f, size.height * 0.75f),
-            end = Offset(size.width * 0.75f, size.height * 0.25f),
-            strokeWidth = 3f,
-        )
-    }
-}
-
-@Composable
-private fun SettingsIcon(tint: Color, modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier.size(18.dp)) {
-        drawCircle(color = tint, radius = size.minDimension / 2.2f, style = Stroke(width = 3f))
-        drawCircle(color = tint, radius = size.minDimension / 5f)
-    }
-}
-
-@Composable
-private fun RefreshIcon(tint: Color, modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier.size(18.dp)) {
-        drawArc(
-            color = tint,
-            startAngle = 30f,
-            sweepAngle = 290f,
-            useCenter = false,
-            style = Stroke(width = 3f, cap = StrokeCap.Round),
-        )
-    }
-}
-
-@Composable
-private fun ClearIcon(tint: Color, modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier.size(14.dp)) {
-        drawLine(color = tint, start = Offset(0f, 0f), end = Offset(size.width, size.height), strokeWidth = 3f, cap = StrokeCap.Round)
-        drawLine(color = tint, start = Offset(size.width, 0f), end = Offset(0f, size.height), strokeWidth = 3f, cap = StrokeCap.Round)
-    }
-}
-
-@Composable
-private fun AutoFixIcon(tint: Color, modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier.size(10.dp)) {
-        drawCircle(color = tint, radius = size.minDimension / 2f)
-    }
-}
-
-@Composable
-internal fun ChevronIcon(tint: Color, modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier.size(16.dp)) {
-        val w = size.width
-        val h = size.height
-        drawLine(color = tint, start = Offset(w * 0.3f, h * 0.2f), end = Offset(w * 0.75f, h * 0.5f), strokeWidth = 3f, cap = StrokeCap.Round)
-        drawLine(color = tint, start = Offset(w * 0.75f, h * 0.5f), end = Offset(w * 0.3f, h * 0.8f), strokeWidth = 3f, cap = StrokeCap.Round)
-    }
-}
-
-@Composable
-internal fun BackArrowIcon(tint: Color, modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier.size(20.dp)) {
-        val w = size.width
-        val h = size.height
-        drawLine(color = tint, start = Offset(w * 0.7f, h * 0.2f), end = Offset(w * 0.3f, h * 0.5f), strokeWidth = 3f, cap = StrokeCap.Round)
-        drawLine(color = tint, start = Offset(w * 0.3f, h * 0.5f), end = Offset(w * 0.7f, h * 0.8f), strokeWidth = 3f, cap = StrokeCap.Round)
-        drawLine(color = tint, start = Offset(w * 0.3f, h * 0.5f), end = Offset(w * 0.9f, h * 0.5f), strokeWidth = 3f, cap = StrokeCap.Round)
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Install permission helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Returns true if the app is allowed to launch the package installer.
- * On Android 8.0+ the user must grant this manually in Settings.
- */
-private fun canInstallPackages(context: Context): Boolean {
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        context.packageManager.canRequestPackageInstalls()
-    } else {
-        true
-    }
-}
-
-/**
- * Sends the user to Settings > Apps > Special access > Install unknown apps
- * so they can flip the toggle for this app.
- */
-private fun openInstallPermissionSettings(context: Context) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
-            data = Uri.parse("package:${context.packageName}")
-        }
-        context.startActivity(intent)
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Shorthand generator
-// ─────────────────────────────────────────────────────────────────────────────
-
-private val SHORTHAND_STOPWORDS = setOf(
-    "and", "of", "the", "for", "io", "to", "a", "an", "&",
-)
-
-private val LAB_REGEX = Regex("(?i)\\b(lab|laboratory)\\b")
-
-internal fun toShorthand(rawName: String): String {
-    if (rawName.isBlank()) return ""
-
-    val isLab = LAB_REGEX.containsMatchIn(rawName)
-    val cleaned = LAB_REGEX.replace(rawName, " ").trim()
-
-    val words = cleaned
-        .split(Regex("\\s+"))
-        .map { it.trim() }
-        .filter { it.isNotBlank() }
-        .filterIndexed { index, word ->
-            index == 0 || word.lowercase() !in SHORTHAND_STOPWORDS
-        }
-
-    if (words.isEmpty()) return rawName.uppercase()
-
-    val acronym: String = if (words.size == 1) {
-        words.first().take(3).uppercase()
-    } else {
-        words.mapNotNull { it.firstOrNull()?.uppercaseChar() }
-            .joinToString("")
-            .take(5)
-    }
-
-    return if (isLab) "$acronym LAB" else acronym
-}
-}
+private fun lerp(start: Int, stop: Int, fraction: Float): Int =
+    (start + (stop - start) * fraction.coerceIn(0f, 1f)).roundToInt()
