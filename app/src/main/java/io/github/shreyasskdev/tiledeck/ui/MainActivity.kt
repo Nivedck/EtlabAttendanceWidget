@@ -86,6 +86,7 @@ import io.github.shreyasskdev.tiledeck.widget.TotalPercentageWidget
 import io.github.shreyasskdev.tiledeck.widget.TIMETABLE_WIDGET_UPDATE_KEY
 import io.github.shreyasskdev.tiledeck.widget.TimetableWidget
 import io.github.shreyasskdev.tiledeck.widget.enqueueWidgetRefresh
+import io.github.shreyasskdev.tiledeck.widget.scheduleNextTimetableTick
 import io.github.shreyasskdev.tiledeck.work.AttendanceWorker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -201,6 +202,9 @@ suspend fun refreshAttendanceWidgets(context: Context) {
         AttendanceWidget().updateAll(appContext)
         TotalPercentageWidget().updateAll(appContext)
         TimetableWidget().updateAll(appContext)
+
+        // Keep the clock-driven timetable updates (period highlight, header) ticking.
+        scheduleNextTimetableTick(appContext)
     } catch (e: Exception) {
         Log.e(TAG, "refreshAttendanceWidgets failed", e)
     }

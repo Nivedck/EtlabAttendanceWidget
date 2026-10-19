@@ -2,6 +2,7 @@ package io.github.shreyasskdev.tiledeck.widget
 
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.datastore.preferences.core.Preferences
@@ -34,6 +35,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import io.github.shreyasskdev.tiledeck.data.AttendancePrefs
+import io.github.shreyasskdev.tiledeck.data.SubjectAttendance
 import io.github.shreyasskdev.tiledeck.data.TimetableDayResult
 import io.github.shreyasskdev.tiledeck.data.TimetableResult
 import io.github.shreyasskdev.tiledeck.data.TimetableSubjectResult
@@ -80,10 +82,12 @@ class TimetableWidget : GlanceAppWidget() {
             val prefs = remember(updateTime) { AttendancePrefs(appContext) }
             val timetable = prefs.getLastTimetable()
             val subjectNameOverrides = prefs.getSubjectNames()
+            val useCustomNames = prefs.getUseCustomNames()
+            val attendanceSubjects = prefs.getLastResult()?.subjects.orEmpty()
             val hasCredentials = prefs.hasCredentials()
 
             GlanceTheme {
-                WidgetContent(hasCredentials, timetable, subjectNameOverrides)
+                WidgetContent(hasCredentials, timetable, subjectNameOverrides, useCustomNames, attendanceSubjects)
             }
         }
     }
@@ -92,7 +96,9 @@ class TimetableWidget : GlanceAppWidget() {
     private fun WidgetContent(
         hasCredentials: Boolean,
         timetable: TimetableResult?,
-        subjectNameOverrides: Map<String, String>
+        subjectNameOverrides: Map<String, String>,
+        useCustomNames: Boolean,
+        attendanceSubjects: List<SubjectAttendance>
     ) {
         val context = LocalContext.current
         val today = LocalDate.now()
@@ -184,6 +190,8 @@ class TimetableWidget : GlanceAppWidget() {
                     schedule = todaySchedule,
                     branchLabel = branchBadgeLabel(timetable),
                     subjectNameOverrides = subjectNameOverrides,
+                    useCustomNames = useCustomNames,
+                    attendanceSubjects = attendanceSubjects,
                     context = context
                 )
             }
@@ -196,6 +204,8 @@ class TimetableWidget : GlanceAppWidget() {
         schedule: TimetableDayResult,
         branchLabel: String,
         subjectNameOverrides: Map<String, String>,
+        useCustomNames: Boolean,
+        attendanceSubjects: List<SubjectAttendance>,
         context: Context
     ) {
         val now = java.time.LocalTime.now()
@@ -245,15 +255,15 @@ class TimetableWidget : GlanceAppWidget() {
             rows.forEachIndexed { rowIndex, rowPeriods ->
                 Row(
                     modifier = GlanceModifier
-                    .fillMaxWidth()
-                    .defaultWeight()
-                    .padding(bottom = if (rowIndex < rows.size - 1) 5.dp else 0.dp),
+                        .fillMaxWidth()
+                        .defaultWeight()
+                        .padding(bottom = if (rowIndex < rows.size - 1) 5.dp else 0.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     rowPeriods.forEachIndexed { colIndex, subject ->
                         val isCurrentPeriod = isCurrentPeriod(subject.hour, nowHour, nowMinute)
                         val hasStarted = hasStartedPeriod(subject.hour, nowHour, nowMinute)
-                        val shortName = resolveShortName(subject.subject, subjectNameOverrides)
+                        val shortName = resolveShortName(subject.subject, subjectNameOverrides, useCustomNames, attendanceSubjects)
 
                         PeriodPill(
                             label = shortName.ifBlank { "FREE" },
@@ -379,16 +389,51 @@ class TimetableWidget : GlanceAppWidget() {
      */
     private fun resolveShortName(
         rawSubject: String,
-        overrides: Map<String, String>
+        overrides: Map<String, String>,
+        useCustomNames: Boolean,
+        attendanceSubjects: List<SubjectAttendance>
     ): String {
-        // Extract the course code from the raw subject (e.g., "PCITT501")
-        // to check if the user has a custom shorthand override for it.
-        val courseCode = extractCourseCode(rawSubject)
-        if (courseCode != null) {
-            overrides[courseCode]?.takeIf { it.isNotBlank() }?.let { return it }
+        // Only apply overrides when the "use custom names" toggle is on,
+        // matching AttendanceWidget.labelFor().
+        if (useCustomNames) {
+            // 1. Direct match on the course code parsed from the raw string.
+            extractCourseCode(rawSubject)?.let { code ->
+                findOverride(overrides, code)?.let { return it }
+            }
+
+            // 2. Fallback: the raw string may have no (or an oddly formatted) code,
+            //    so match it against the attendance subjects by code-in-text or name,
+            //    then use that subject's override.
+            val normRaw = normalizeKey(rawSubject)
+            val normParsed = normalizeKey(parseSubjectName(rawSubject))
+            val match = attendanceSubjects.firstOrNull { s ->
+                val normCode = normalizeKey(s.code)
+                val normName = normalizeKey(s.name)
+                (normCode.isNotEmpty() && normRaw.contains(normCode)) ||
+                        (normParsed.length >= 4 && normName.isNotEmpty() &&
+                                (normName == normParsed ||
+                                        normName.contains(normParsed) ||
+                                        normParsed.contains(normName)))
+            }
+            match?.let { findOverride(overrides, it.code) }?.let { return it }
+
+            Log.d("TimetableWidget", "No override match for raw='$rawSubject' (overrides keys=${overrides.keys})")
         }
 
         return parseSubjectName(rawSubject)
+    }
+
+    /** Uppercases and strips everything but letters/digits; treats "&" as "AND". */
+    private fun normalizeKey(s: String): String =
+        s.uppercase().replace("&", "AND").filter { it.isLetterOrDigit() }
+
+    /** Finds an override by exact code, then by whitespace/case-insensitive code. */
+    private fun findOverride(overrides: Map<String, String>, code: String): String? {
+        overrides[code]?.takeIf { it.isNotBlank() }?.let { return it }
+        val norm = normalizeKey(code)
+        return overrides.entries
+            .firstOrNull { normalizeKey(it.key) == norm && it.value.isNotBlank() }
+            ?.value
     }
 
     /**
@@ -401,7 +446,7 @@ class TimetableWidget : GlanceAppWidget() {
         val dashIdx = raw.indexOf(" - ")
         if (dashIdx <= 0) return null
         val potentialCode = raw.substring(0, dashIdx).trim()
-        return if (potentialCode.length <= 12 && potentialCode.matches(Regex("[A-Z0-9]+"))) {
+        return if (potentialCode.length <= 14 && potentialCode.matches(Regex("[A-Za-z0-9 ]+"))) {
             potentialCode
         } else null
     }
@@ -433,7 +478,7 @@ class TimetableWidget : GlanceAppWidget() {
         val dashIdx = name.indexOf(" - ")
         if (dashIdx > 0) {
             val potentialCode = name.substring(0, dashIdx).trim()
-            if (potentialCode.length <= 12 && potentialCode.matches(Regex("[A-Z0-9]+"))) {
+            if (potentialCode.length <= 14 && potentialCode.matches(Regex("[A-Za-z0-9 ]+"))) {
                 name = name.substring(dashIdx + 3).trim()
             }
         }
