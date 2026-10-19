@@ -22,7 +22,15 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AutoFixHigh
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Switch
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.outlined.AutoFixHigh
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -69,7 +77,7 @@ internal fun CustomizationTab(
                             title = "Use my custom names",
                             subtitle = "Show your own labels in the app and widgets",
                             badgeColor = palette[0].first,
-                            badgeContent = { EditIcon(tint = palette[0].second) },
+                            badgeContent = { Icon(Icons.Outlined.Edit, null, tint = palette[0].second, modifier = Modifier.size(24.dp)) },
                             onClick = { onUseCustomNamesChange(!useCustomNames) },
                             trailing = {
                                 Switch(checked = useCustomNames, onCheckedChange = onUseCustomNamesChange)
@@ -81,7 +89,7 @@ internal fun CustomizationTab(
                             title = "Shorthand auto-generator",
                             subtitle = "Fill empty names with short forms",
                             badgeColor = palette[2].first,
-                            badgeContent = { AutoFixIcon(tint = palette[2].second) },
+                            badgeContent = { Icon(Icons.Outlined.AutoFixHigh, null, tint = palette[2].second, modifier = Modifier.size(24.dp)) },
                             onClick = if (useCustomNames) {
                                 { onUseShorthandChange(!useShorthand) }
                             } else null,
@@ -224,7 +232,12 @@ private fun SubjectOverrideCard(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
-                        AutoFixIcon(tint = MaterialTheme.colorScheme.onSecondaryContainer)
+                        Icon(
+                            imageVector = Icons.Outlined.AutoFixHigh,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.size(24.dp)
+                        )
                         FlexText(
                             text = shorthand,
                             weight = 800,

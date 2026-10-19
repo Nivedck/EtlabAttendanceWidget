@@ -162,7 +162,7 @@ internal fun CircleIconButton(
             if (loading) {
                 LoadingIndicator(modifier = Modifier.size(28.dp), color = contentColor)
             } else {
-                Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(20.dp))
+                Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(24.dp))
             }
         }
     }

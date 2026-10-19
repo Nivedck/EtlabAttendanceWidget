@@ -293,11 +293,11 @@ private fun AboutHero() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(vertical = 0.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
-            modifier = Modifier.size(120.dp),
+            modifier = Modifier.size(160.dp),
             contentAlignment = Alignment.Center,
         ) {
             // Rotating shape (the text is NOT inside this layer, so it stays upright).
@@ -313,7 +313,7 @@ private fun AboutHero() {
                     }
                 },
                 shape = MaterialShapes.Cookie9Sided.toShape(),
-                color = MaterialTheme.colorScheme.primaryContainer,
+                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer { rotationZ = if (reduced) 0f else spin + kick.value },
@@ -324,8 +324,8 @@ private fun AboutHero() {
             Icon(
                 painter = painterResource(R.mipmap.ic_launcher_monochrome),
                 contentDescription = "Tiledeck logo",
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.size(112.dp),
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(190.dp),
             )
         }
 

@@ -27,6 +27,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
@@ -162,7 +163,7 @@ internal fun SettingsTab(
                             },
                             onClick = onOpenAbout,
                             rowContentDescription = "Open About and privacy screen",
-                            trailing = { ChevronIcon(tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                            trailing = { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                         )
                     }
                 }
@@ -390,7 +391,7 @@ private fun PasswordShapeField(
                     else Icons.Outlined.Visibility,
                     contentDescription = if (showPassword) "Hide password" else "Show password",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(24.dp),
                 )
             }
         }
@@ -627,7 +628,7 @@ private fun VersionCard(
                 Icon(
                     Icons.Outlined.Refresh,
                     contentDescription = null,
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(24.dp),
                 )
             }
             Spacer(Modifier.width(8.dp))
